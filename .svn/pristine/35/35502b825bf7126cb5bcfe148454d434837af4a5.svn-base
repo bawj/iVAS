@@ -1,0 +1,45 @@
+package com.yn.electricity.request;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.util.List;
+
+/**
+ * @author 电视墙
+ */
+@Data
+@ApiModel(value = "添加电视墙信息")
+public class TvWallSaveRequest {
+
+    @ApiModelProperty(value = "配置名称")
+    @NotEmpty(message = "配置名称不能为空")
+    private String name;
+
+    @ApiModelProperty(value = "轮询时间")
+    @NotNull(message = "轮询时间不能为空")
+    private Integer pollTime;
+
+    @ApiModelProperty(value = "是否禁用 1启用 0禁用")
+    @NotNull(message = "请选择是否启动")
+    private Boolean status;
+
+    @ApiModelProperty(value = "备注说明")
+    private String remarks;
+
+    @ApiModelProperty(value = "窗口分割")
+    @NotNull(message = "请选择窗口分割")
+    private String windowDivision;
+
+    @ApiModelProperty(value = "关联的资源id 根据resources_source 判断关联")
+    @NotNull(message = "请选择关联资源")
+    private List<Integer> resourcesIds;
+
+    @ApiModelProperty(value = "resources_id 的来源 1代表关联组织机构 2代表关联镜头组 ")
+    @NotNull(message = "请选择关联资源")
+    private Integer resourcesSource;
+
+}

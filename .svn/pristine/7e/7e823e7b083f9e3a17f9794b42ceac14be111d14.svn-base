@@ -1,0 +1,109 @@
+package com.yn.electricity.controller.device;
+
+import com.yn.electricity.request.TvWallAlterRequest;
+import com.yn.electricity.request.TvWallSaveRequest;
+import com.yn.electricity.service.TvWallService;
+import com.yn.electricity.util.ValidationUtils;
+import com.yn.electricity.util.log.annotation.SystemBeforeLog;
+import com.yn.electricity.web.WebResult;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import java.util.List;
+
+/**
+ * @author admin
+ * Date 2021/3/20 10:43
+ * Description 电视墙管理
+ **/
+@Validated
+@Api(tags = "电视墙管理")
+@RestController
+public class TvWallController {
+
+    @Resource
+    private TvWallService tvWallService;
+
+    @SystemBeforeLog(menuName = "添加电视墙配置", description = "添加电视墙配置")
+    @PostMapping("/tv_wall/add")
+    @ApiOperation(value = "添加电视墙配置", notes = "添加电视墙配置")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "name", value = "配置名称", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name = "pollTime", value = "轮询时间", required = true, dataTypeClass = Integer.class),
+            @ApiImplicitParam(name = "status", value = "是否禁用 1启用 0禁用", dataTypeClass = Boolean.class),
+            @ApiImplicitParam(name = "remarks", value = "备注说明", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "windowDivision", value = "窗口分割", required = true, dataTypeClass = Integer.class),
+            @ApiImplicitParam(name = "resourcesId", value = "配置名称", required = true, dataTypeClass = Integer.class),
+            @ApiImplicitParam(name = "resourcesSource", value = "resources_id 的来源 1代表关联组织机构 2代表关联镜头组", required = true, dataTypeClass = Integer.class),
+    })
+    public void addTvWall(@RequestBody TvWallSaveRequest tvWallSaveRequest, HttpServletResponse httpServletResponse) {
+        ValidationUtils.checkParam(tvWallSaveRequest);
+        WebResult.success(tvWallService.addTvWall(tvWallSaveRequest), httpServletResponse);
+    }
+
+    @SystemBeforeLog(menuName = "修改电视墙配置", description = "修改电视墙配置")
+    @PostMapping("/tv_wall/alter")
+    @ApiOperation(value = "修改电视墙配置", notes = "修改电视墙配置")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name = "name", value = "配置名称", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name = "pollTime", value = "轮询时间", required = true, dataTypeClass = Integer.class),
+            @ApiImplicitParam(name = "status", value = "是否禁用 1启用 0禁用", dataTypeClass = Boolean.class),
+            @ApiImplicitParam(name = "remarks", value = "备注说明", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "windowDivision", value = "窗口分割", required = true, dataTypeClass = Integer.class),
+            @ApiImplicitParam(name = "resourcesId", value = "配置名称", required = true, dataTypeClass = Integer.class),
+            @ApiImplicitParam(name = "resourcesSource", value = "resources_id 的来源 1代表关联组织机构 2代表关联镜头组", required = true, dataTypeClass = Integer.class),
+    })
+    public void alterTvWall(@RequestBody TvWallAlterRequest tvWallAlterRequest, HttpServletResponse httpServletResponse) {
+        ValidationUtils.checkParam(tvWallAlterRequest);
+        WebResult.success(tvWallService.alterTvWall(tvWallAlterRequest), httpServletResponse);
+    }
+
+    @SystemBeforeLog(menuName = "删除电视墙配置", description = "删除电视墙配置")
+    @PostMapping("/tv_wall/delete")
+    @ApiOperation(value = "删除电视墙配置", notes = "删除电视墙配置")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id", required = true, dataTypeClass = String.class),
+    })
+    public void deleteTvWall(@RequestBody List<Integer> ids, HttpServletResponse httpServletResponse) {
+        WebResult.success(tvWallService.deleteTvWall(ids), httpServletResponse);
+    }
+
+    @GetMapping("/tv_wall/find")
+    @ApiOperation(value = "查询电视墙配置", notes = "查询电视墙配置")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "pageNum", value = "分页数量", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "pageSize", value = "分页", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "name", value = "配置名称", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "status", value = "配置状态 0禁用 1启用", dataTypeClass = String.class),
+    })
+    public void findTvWall(@RequestParam(name = "pageNum", required = false, defaultValue = "1") Integer pageNum,
+                           @RequestParam(name = "pageSize", required = false, defaultValue = "30") Integer pageSize,
+                           String name, Boolean status, HttpServletResponse httpServletResponse) {
+        WebResult.success(tvWallService.findTvWall(pageNum, pageSize, name, status), httpServletResponse);
+    }
+
+    @ApiOperation(value = "解码上墙", notes = "解码上墙")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "decoderId", value = "解码器id", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "devId", value = "设备id", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "channelNo", value = "通道号", dataTypeClass = String.class),
+    })
+    @GetMapping("/video/wall")
+    public void videoWall(@Valid @NotNull(message = "请选择解码器") Integer decoderId ,
+                          @NotNull(message = "设备id不能为空") Integer devId ,
+                          @NotNull(message = "通道号不能为空") Integer channelNo,
+                          HttpServletResponse httpServletResponse){
+        WebResult.success(tvWallService.videoWall(decoderId, devId, channelNo), httpServletResponse);
+    }
+
+}
+

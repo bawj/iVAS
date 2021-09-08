@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.DecoderMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.DecoderDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="ip" property="ip" jdbcType="VARCHAR"/>
+        <result column="port" property="port" jdbcType="INTEGER"/>
+        <result column="device_type_id" property="deviceTypeId" jdbcType="INTEGER"/>
+        <result column="register_account" property="registerAccount" jdbcType="VARCHAR"/>
+        <result column="register_password" property="registerPassword" jdbcType="VARCHAR"/>
+        <result column="decoder_code" property="decoderCode" jdbcType="VARCHAR"/>
+        <result column="company_code" property="companyCode" jdbcType="VARCHAR"/>
+        <result column="department_code" property="departmentCode" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectDecoderByName" resultMap="BaseResultMap">
+        select id,
+               name,
+               ip,
+               port,
+               device_type_id,
+               register_account,
+               register_password,
+               decoder_code,
+               company_code,
+               department_code,
+               create_time,
+               update_time
+        from decoder
+        where name = #{decoderName}
+    </select>
+
+
+    <select id="selectDecoderByIpAndPort" resultMap="BaseResultMap">
+        select id,
+               name,
+               ip,
+               port,
+               device_type_id,
+               register_account,
+               register_password,
+               decoder_code,
+               company_code,
+               department_code,
+               create_time,
+               update_time
+        from decoder
+        where ip = #{ip}
+          and port = #{port}
+    </select>
+
+    <select id="selectDecoderByCode" resultMap="BaseResultMap">
+        select id,
+               name,
+               ip,
+               port,
+               device_type_id,
+               register_account,
+               register_password,
+               decoder_code,
+               company_code,
+               department_code,
+               create_time,
+               update_time
+        from decoder
+        <where>
+            <if test="decoderCode != null and decoderCode != ''">
+               and decoder_code = #{decoderCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectDecoderByNameNotId" resultType="com.yn.electricity.dao.DecoderDAO">
+        select id,
+               name,
+               ip,
+               port,
+               device_type_id,
+               register_account,
+               register_password,
+               decoder_code,
+               company_code,
+               department_code,
+               create_time,
+               update_time
+        from decoder
+        where name = #{decoderName}
+          and id != #{decoderId}
+    </select>
+
+    <select id="selectDecoderByIpAndPortNotId" resultType="com.yn.electricity.dao.DecoderDAO">
+        select id,
+               name,
+               ip,
+               port,
+               device_type_id,
+               register_account,
+               register_password,
+               decoder_code,
+               company_code,
+               department_code,
+               create_time,
+               update_time
+        from decoder
+        where ip = #{ip}
+          and port = #{port}
+          and id != #{decoderId}
+    </select>
+
+    <select id="selectDecoderByCodeNotId" resultType="com.yn.electricity.dao.DecoderDAO">
+        select id,
+               name,
+               ip,
+               port,
+               device_type_id,
+               register_account,
+               register_password,
+               decoder_code,
+               company_code,
+               department_code,
+               create_time,
+               update_time
+        from decoder
+        where decoder_code = #{decoderCode}
+          and id != #{decoderId}
+    </select>
+
+    <select id="selectByNameAndDeviceTypeAndTime" resultType="com.yn.electricity.vo.DecoderVO">
+        SELECT
+            d.id,
+            d.`name` as decoderName,
+            dt.`name` as deviceTypeName,
+            d.ip,
+            d.`port`,
+            d.register_account as registerAccount,
+            d.decoder_code as decoderCode,
+            d.create_time as createTime
+        FROM
+            `decoder` d
+                LEFT JOIN device_type dt ON d.device_type_id = dt.id
+        <where>
+           <if test="decoderName != null and decoderName != ''">
+               and d.`name` LIKE CONCAT('%',#{decoderName},'%')
+           </if>
+            <if test="deviceTypeId != null">
+                dt.id = #{deviceTypeId}
+            </if>
+            <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+                d.create_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="null != depCodeList and depCodeList.size > 0">
+                and department_code in(
+                <foreach collection="depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != companyCodeList and companyCodeList.size > 0">
+                and company_code in(
+                <foreach collection="companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+</mapper>

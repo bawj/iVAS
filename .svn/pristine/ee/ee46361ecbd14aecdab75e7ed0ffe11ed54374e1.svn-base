@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.RoleDeptMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.RoleDept">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="ip_role_id" property="ipRoleId" jdbcType="VARCHAR"/>
+        <result column="dep_code" property="depCode" jdbcType="VARCHAR"/>
+        <result column="data_type" property="dataType" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="java.util.List">
+        <foreach collection="list" index="ind" item="it" separator=";">
+            insert into role_dept(ip_role_id, dep_code, data_type, create_time, modify_time)
+            VALUES(#{it.ipRoleId}, #{it.depCode}, #{it.dataType}, #{it.createTime}, #{it.modifyTime})
+        </foreach>
+    </insert>
+    
+    <select id="selectByIpRoleId" resultMap="BaseResultMap" parameterType="java.util.List">
+        SELECT
+               dep_code, data_type
+        FROM role_dept
+        WHERE ip_role_id in(
+            <foreach collection="list" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+            )
+    </select>
+
+    <delete id="deleteByIpRoleId" parameterType="java.util.List">
+        DELETE FROM role_dept WHERE ip_role_id in(
+        <foreach collection="list" index="ind" item="it" separator=",">
+            #{it}
+        </foreach>
+        )
+    </delete>
+
+    <select id="selectByRoleId" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT id, ip_role_id, dep_code, data_type FROM role_dept WHERE ip_role_id = #{ipRoleId}
+    </select>
+</mapper>

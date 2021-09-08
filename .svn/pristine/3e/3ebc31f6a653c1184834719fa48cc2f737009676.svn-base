@@ -1,0 +1,32 @@
+package com.yn.electricity.controller.redis;
+
+import com.yn.electricity.ResultUtilVO;
+import com.yn.electricity.ResultVO;
+import com.yn.electricity.mapper.DeviceMapper;
+import com.yn.electricity.qto.DeviceDTO;
+import com.yn.electricity.service.RedisInfoService;
+import com.yn.electricity.util.RedisInfoUtil;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.Resource;
+import java.util.List;
+
+/**
+ * @author admin
+ * Date 2021/6/1 16:58
+ * Description pas 添加设备后发送请求 更新redis缓存
+ **/
+@RestController
+public class RedisInfoController {
+
+    @Resource
+    private RedisInfoService redisInfoService;
+
+    @GetMapping("/redis/update_device")
+    public ResultVO<String> redisUpdateDevice() {
+        redisInfoService.redisUpdateDevice();
+        return ResultUtilVO.onSuccess();
+    }
+
+}

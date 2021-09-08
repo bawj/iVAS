@@ -1,0 +1,46 @@
+package com.yn.electricity.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yn.electricity.dao.AlarmConfigurationDAO;
+import com.yn.electricity.entity.AlarmConfigurationEntity;
+import com.yn.electricity.qto.AlarmConfigurationDTO;
+import com.yn.electricity.vo.AlarmConfigurationVO;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * @author 报警配置
+ */
+public interface AlarmConfigurationMapper extends BaseMapper<AlarmConfigurationDAO> {
+
+
+    /**
+     * 查询配置列表
+     *
+     * @param alarmConfiguration alarmConfigurationDTO
+     * @return List
+     */
+    List<AlarmConfigurationVO> findConfiguration(AlarmConfigurationDTO alarmConfiguration);
+
+
+    /**
+     * 查询报警类型 对应的 配置规则
+     *
+     * @param alarmConfigurationIds alarmConfigurationIds
+     * @param alarmTypeId           alarmTypeId
+     * @return AlarmConfigurationDAO
+     */
+    AlarmConfigurationDAO selectBatchIdsAndAlarmType(@Param("alarmConfigurationIds") List<Integer> alarmConfigurationIds,
+                                                     @Param("alarmTypeId") Integer alarmTypeId);
+
+
+    /**
+     * 根据devId 和 配置类型查询 对应的配置
+     * @param devId       devId
+     * @param alarmTypeId 配置类型id
+     * @return alarmConfiguration
+     */
+    AlarmConfigurationEntity findConfigurationByDevIdAndAlarmTypeId(Integer devId, Integer alarmTypeId);
+
+}

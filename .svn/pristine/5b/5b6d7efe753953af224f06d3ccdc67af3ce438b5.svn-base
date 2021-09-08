@@ -1,0 +1,309 @@
+package com.yn.electricity.service.alarm.impl;
+
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.google.common.collect.Maps;
+import com.yn.electricity.dao.*;
+import com.yn.electricity.entity.DistributionTimeEntity;
+import com.yn.electricity.exception.BusinessException;
+import com.yn.electricity.mapper.*;
+import com.yn.electricity.qto.AlarmConfigurationDTO;
+import com.yn.electricity.request.AlarmConfigurationAlterRequest;
+import com.yn.electricity.request.AlarmConfigurationRequest;
+import com.yn.electricity.result.UserResult;
+import com.yn.electricity.service.alarm.AlarmConfigurationService;
+import com.yn.electricity.util.EntityUtil;
+import com.yn.electricity.util.RedisInfoUtil;
+import com.yn.electricity.vo.AlarmConfigurationVO;
+import com.yn.electricity.vo.ConfigurationTypeVO;
+import com.yn.electricity.vo.ResponseTypeVO;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * @author admin
+ * Date 2021/5/21 9:36
+ * Description 报警配置service
+ **/
+@Service
+public class AlarmConfigurationServiceImpl implements AlarmConfigurationService {
+
+    @Resource
+    private RedisInfoUtil redisInfoUtil;
+    @Resource
+    private ArtAcMapper artAcMapper;
+    @Resource
+    private CameraMapper cameraMapper;
+    @Resource
+    private OrganizationMapper organizationMapper;
+    @Resource
+    private AlarmConfigurationTypeMapper configurationTypeMapper;
+    @Resource
+    private AlarmResponseTypeMapper responseTypeMapper;
+    @Resource
+    private AlarmConfigurationMapper configurationMapper;
+    @Resource
+    private AcOrganizationCameraGroupMapper acOrganizationCameraGroupMapper;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String addConfiguration(AlarmConfigurationRequest configurationRequest) {
+        //组织机构id
+        List<Integer> organizationIds = configurationRequest.getOrganizationIds();
+        //镜头组id
+        List<Integer> cameraIds = configurationRequest.getCameraIds();
+        //判断布防时间是否符合规则
+        DistributionTimeEntity distributionTime = configurationRequest.getDistributionTime();
+        //响应类型是否正确
+        List<Integer> responseTypeIds = configurationRequest.getResponseTypeIds();
+        //判断资源是否有误
+        execResources(organizationIds, cameraIds, distributionTime, responseTypeIds);
+        //响应消除方式
+        Integer responseEliminate = configurationRequest.getResponseEliminate();
+        //报警等级
+        Integer alarmGrade = configurationRequest.getAlarmGrade();
+        String remarks = configurationRequest.getRemarks();
+        Boolean enable = configurationRequest.getEnable();
+        //报存到数据库
+        AlarmConfigurationDAO configuration = new AlarmConfigurationDAO();
+        configuration.setName(configurationRequest.getName());
+        configuration.setAlarmConfigurationTypeId(configurationRequest.getConfigurationTypeId());
+        configuration.setDistributionTime(JSON.toJSONString(distributionTime));
+        configuration.setResponseEliminate(responseEliminate);
+        configuration.setAlarmGrade(alarmGrade);
+        configuration.setRemarks(remarks);
+        configuration.setEnable(enable);
+        configuration.setCreateTime(new Date());
+        configuration.setUpdateTime(new Date());
+
+        UserResult userResult = redisInfoUtil.getUserResult();
+        EntityUtil.setCpyCodeDepCodeIpIdUserId(configuration, userResult);
+        configurationMapper.insert(configuration);
+
+        Integer id = configuration.getId();
+        //资源关联
+        saveAcOrganizationCameraGroup(id, organizationIds, cameraIds);
+        //关联响应类型
+        saveArtAc(id, responseTypeIds);
+        return null;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String updateConfiguration(AlarmConfigurationAlterRequest configurationAlterRequest) {
+        Integer id = configurationAlterRequest.getId();
+        AlarmConfigurationDAO configurationDAO = configurationMapper.selectById(id);
+        if (configurationDAO == null) {
+            throw new BusinessException("id 错误");
+        }
+        //判断布防时间是否符合规则
+        DistributionTimeEntity distributionTime = configurationAlterRequest.getDistributionTime();
+        //响应类型是否正确
+        List<Integer> responseTypeIds = configurationAlterRequest.getResponseTypeIds();
+        //判断资源是否有误
+        execResources(configurationAlterRequest.getOrganizationIds(), configurationAlterRequest.getCameraIds(), distributionTime, responseTypeIds);
+
+        //修改AlarmConfigurationDAO
+        BeanUtils.copyProperties(configurationAlterRequest , configurationDAO);
+        configurationDAO.setDistributionTime(JSON.toJSONString(distributionTime));
+        configurationDAO.setUpdateTime(new Date());
+
+        UserResult userResult = redisInfoUtil.getUserResult();
+        EntityUtil.setCpyCodeDepCodeIpIdUserId(configurationDAO, userResult);
+        configurationMapper.updateById(configurationDAO);
+        //删除ac_organization_cameragroup
+        HashMap<String, Object> acMap = Maps.newHashMap();
+        acMap.put("alarm_configuration_id" , id);
+        acOrganizationCameraGroupMapper.deleteByMap(acMap);
+        //资源关联
+        saveAcOrganizationCameraGroup(id, configurationAlterRequest.getOrganizationIds(), configurationAlterRequest.getCameraIds());
+        //删除art_ac
+        HashMap<String, Object> artAcMap = Maps.newHashMap();
+        artAcMap.put("alarm_configuration_id" , id);
+        artAcMapper.deleteByMap(artAcMap);
+        //关联响应类型
+        saveArtAc(id, responseTypeIds);
+
+        return null;
+    }
+
+
+    /**
+     * 判断相关关联是否错误
+     *
+     * @param organizationIds organizationIds
+     * @param cameraIds       cameraIds
+     */
+    private void execResources(List<Integer> organizationIds, List<Integer> cameraIds,
+                               DistributionTimeEntity distributionTime, List<Integer> responseTypeIds) {
+        if (CollectionUtils.isEmpty(organizationIds) && CollectionUtils.isEmpty(cameraIds)) {
+            throw new BusinessException("请关联资源");
+        }
+        //判断组织机构和镜头组id是否存在
+        if (!CollectionUtils.isEmpty(organizationIds)) {
+            List<OrganizationDAO> organizationList = organizationMapper.selectListById(organizationIds);
+            if (CollectionUtils.isEmpty(organizationList) || organizationList.size() != organizationIds.size()) {
+                throw new BusinessException("组织机构id有错误");
+            }
+        }
+        if (!CollectionUtils.isEmpty(cameraIds)) {
+            List<CameraDAO> cameraList = cameraMapper.selectBatchIds(cameraIds);
+            if (CollectionUtils.isEmpty(cameraList) || cameraList.size() != cameraIds.size()) {
+                throw new BusinessException("镜头组id有错误");
+            }
+        }
+        //判断布防时间是否符合规则
+        isDistributionTimeEntity(distributionTime);
+        //响应类型是否正确
+        List<AlarmResponseTypeDAO> responseTypeList = responseTypeMapper.selectBatchIds(responseTypeIds);
+        if (CollectionUtils.isEmpty(responseTypeList) || responseTypeList.size() != responseTypeIds.size()) {
+            throw new BusinessException("响应类型id有错误");
+        }
+    }
+
+    private void saveArtAc(int id, List<Integer> responseTypeIds) {
+        List<ArtAcDAO> artAcList = new ArrayList<>();
+        responseTypeIds.forEach(responseTypeId -> {
+            ArtAcDAO artAcDAO = new ArtAcDAO();
+            artAcDAO.setAlarmConfigurationId(id);
+            artAcDAO.setAlarmResponseTypeId(responseTypeId);
+            artAcDAO.setCreateTime(new Date());
+            artAcList.add(artAcDAO);
+        });
+        artAcMapper.insertList(artAcList);
+    }
+
+    private void saveAcOrganizationCameraGroup(int id, List<Integer> organizationIds, List<Integer> cameraIds) {
+        if (!CollectionUtils.isEmpty(organizationIds)) {
+            List<AcOrganizationCameraGroupDAO> acList = new ArrayList<>();
+            organizationIds.forEach(organizationId -> {
+                AcOrganizationCameraGroupDAO acOrganization = new AcOrganizationCameraGroupDAO();
+                acOrganization.setAlarmConfigurationId(id);
+                acOrganization.setOrganizationId(organizationId);
+                acOrganization.setCreateTime(new Date());
+                acList.add(acOrganization);
+            });
+            acOrganizationCameraGroupMapper.insertList(acList);
+        }
+        if (!CollectionUtils.isEmpty(cameraIds)) {
+            List<AcOrganizationCameraGroupDAO> acList = new ArrayList<>();
+            cameraIds.forEach(cameraId -> {
+                AcOrganizationCameraGroupDAO acOrganization = new AcOrganizationCameraGroupDAO();
+                acOrganization.setAlarmConfigurationId(id);
+                acOrganization.setCameraGroupId(cameraId);
+                acOrganization.setCreateTime(new Date());
+                acList.add(acOrganization);
+            });
+            acOrganizationCameraGroupMapper.insertList(acList);
+        }
+    }
+
+
+    private void isDistributionTimeEntity(DistributionTimeEntity distributionTime) {
+        //周一
+        DistributionTimeEntity.DisTime monday = distributionTime.getMonday();
+        isEndTimeGreaterStartTime(monday.getStartTime(), monday.getEndTime());
+        DistributionTimeEntity.DisTime tuesday = distributionTime.getTuesday();
+        isEndTimeGreaterStartTime(tuesday.getStartTime(), tuesday.getEndTime());
+        DistributionTimeEntity.DisTime wednesday = distributionTime.getWednesday();
+        isEndTimeGreaterStartTime(wednesday.getStartTime(), wednesday.getEndTime());
+        DistributionTimeEntity.DisTime thursday = distributionTime.getThursday();
+        isEndTimeGreaterStartTime(thursday.getStartTime(), thursday.getEndTime());
+        DistributionTimeEntity.DisTime friday = distributionTime.getFriday();
+        isEndTimeGreaterStartTime(friday.getStartTime(), friday.getEndTime());
+        DistributionTimeEntity.DisTime saturday = distributionTime.getSaturday();
+        isEndTimeGreaterStartTime(saturday.getStartTime(), saturday.getEndTime());
+        DistributionTimeEntity.DisTime sunday = distributionTime.getSunday();
+        isEndTimeGreaterStartTime(sunday.getStartTime(), sunday.getEndTime());
+    }
+
+    private void isEndTimeGreaterStartTime(String startTime, String endTime) {
+        try {
+            if (StringUtils.isEmpty(startTime) || StringUtils.isEmpty(endTime)) {
+                throw new BusinessException("请选择布防时间");
+            }
+            Date start = DateUtil.parse(startTime);
+            Date end = DateUtil.parse(endTime);
+            long betweenDay = DateUtil.between(start, end, DateUnit.MINUTE);
+            if (betweenDay <= 0) {
+                throw new BusinessException("布防时间结束时间必须大于开始时间");
+            }
+        } catch (Exception e) {
+            throw new BusinessException("布防时间格式错误");
+        }
+    }
+
+
+    @Override
+    public List<ConfigurationTypeVO> findConfigurationType() {
+        List<AlarmConfigurationTypeDAO> configurationTypeDAOList = configurationTypeMapper.selectByMap(null);
+        List<ConfigurationTypeVO> configurationTypeVOList = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(configurationTypeDAOList)) {
+            configurationTypeDAOList.forEach(configurationTypeDAO -> {
+                ConfigurationTypeVO configurationTypeVO = new ConfigurationTypeVO();
+                BeanUtils.copyProperties(configurationTypeDAO, configurationTypeVO);
+                configurationTypeVOList.add(configurationTypeVO);
+            });
+        }
+        return configurationTypeVOList;
+    }
+
+    @Override
+    public List<ResponseTypeVO> findResponseType() {
+        List<AlarmResponseTypeDAO> responseTypeDAOList = responseTypeMapper.selectByMap(null);
+
+        List<ResponseTypeVO> responseTypeVOList = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(responseTypeDAOList)) {
+            responseTypeDAOList.forEach(alarmResponseTypeDAO -> {
+                ResponseTypeVO responseTypeVO = new ResponseTypeVO();
+                BeanUtils.copyProperties(alarmResponseTypeDAO, responseTypeVO);
+                responseTypeVOList.add(responseTypeVO);
+            });
+        }
+
+        return responseTypeVOList;
+    }
+
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String configurationDel(List<Integer> ids) {
+        if (CollectionUtils.isEmpty(ids)){
+            throw new BusinessException("id 错误");
+        }
+        //删除 alarm_configuration
+        configurationMapper.deleteBatchIds(ids);
+        //删除 ac_organization_cameragroup
+        QueryWrapper<AcOrganizationCameraGroupDAO> acWrapper = new QueryWrapper<>();
+        acWrapper.in("alarm_configuration_id",ids);
+        acOrganizationCameraGroupMapper.delete(acWrapper);
+        //删除 art_ac
+        QueryWrapper<ArtAcDAO> artAcWrapper = new QueryWrapper<>();
+        artAcWrapper.in("alarm_configuration_id",ids);
+        artAcMapper.delete(artAcWrapper);
+        return null;
+    }
+
+    @Override
+    public PageInfo<AlarmConfigurationVO> findConfiguration(AlarmConfigurationDTO alarmConfigurationDTO) {
+        PageHelper.startPage(alarmConfigurationDTO.getPageNum() , alarmConfigurationDTO.getPageSize());
+        List<AlarmConfigurationVO> configurationList = configurationMapper.findConfiguration(alarmConfigurationDTO);
+        return new PageInfo<>(configurationList);
+    }
+
+
+}
+

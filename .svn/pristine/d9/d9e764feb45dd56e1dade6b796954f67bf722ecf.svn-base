@@ -1,0 +1,116 @@
+package com.yn.electricity.security;
+
+import com.yn.electricity.dao.Menu;
+import com.yn.electricity.enums.UserLockStatusEnum;
+import com.yn.electricity.enums.YesOrNotEnum;
+import com.yn.electricity.mapper.UserMapper;
+import com.yn.electricity.qto.UserDTO;
+import com.yn.electricity.redis.RedisUtil;
+import com.yn.electricity.util.RedisInfoUtil;
+import com.yn.electricity.util.RedisKey;
+import com.yn.electricity.utils.BizBusinessUtils;
+import com.yn.electricity.vo.RoleMenuVo;
+import com.yn.electricity.vo.UserRoleMenuVo;
+import org.apache.shiro.authc.*;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.realm.AuthorizingRealm;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.util.ByteSource;
+import org.apache.shiro.util.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * @ClassName: InformationRealm
+ * @Author: zzs
+ * @Date: 2021/1/20 16:56
+ * @Description: 域可以有多个
+ */
+public class InformationRealm extends AuthorizingRealm {
+    @Resource
+    private UserMapper userMapper;
+    @Autowired
+    private RedisUtil redisUtil;
+    @Autowired
+    private RedisInfoUtil redisInfoUtil;
+
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
+        // 用户名
+        String userName = (String)principals.getPrimaryPrincipal();
+
+        List<RoleMenuVo> roles = (List<RoleMenuVo>)redisUtil.get(RedisKey.ROLE_MENU_INFO + userName);
+
+        SimpleAuthorizationInfo authorizationInfo = new SimpleAuthorizationInfo();
+        Set<String> roleSet = new HashSet<>();
+        Set<String> pSet = new HashSet<>();
+
+        if(CollectionUtils.isEmpty(roles)){
+            BizBusinessUtils.bizBusinessException("用户没有角色 userName:{}", userName);
+        }
+        roles.stream().forEach(r->{
+            roleSet.add(r.getRoleName());
+
+            List<Menu> menuList = r.getMenuList();
+            menuList.remove(null);
+            if(CollectionUtils.isEmpty(menuList)){
+                BizBusinessUtils.bizBusinessException("用户没有分配权限 userName:{}", userName);
+            }
+            menuList.stream().forEach(m->{
+                pSet.add(m.getMenuRoute());
+            });
+        });
+
+        authorizationInfo.setRoles(roleSet);
+        authorizationInfo.setStringPermissions(pSet);
+        return authorizationInfo;
+    }
+
+    @Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
+        // 用户名
+        String loginName = (String)token.getPrincipal();
+        String password =  new String((char[])token.getCredentials());
+
+        String phone = null;
+        String eMail = null;
+        // 检查用户使用手机号登陆还是邮箱登陆
+        if(loginName.contains("@")){
+            eMail = loginName;
+        }else {
+            phone = loginName;
+        }
+
+        UserDTO userDTO = new UserDTO();
+        userDTO.setAppId(1);
+        userDTO.setPhone(phone);
+        userDTO.setEMail(eMail);
+        UserRoleMenuVo user = userMapper.selectByLoginName(userDTO);
+        if(null == user){
+            throw new UnknownAccountException("用户不存在");
+        }
+        if(UserLockStatusEnum.LOCK.getCode().equals(user.getLockStatus())){
+            throw new LockedAccountException("账号已锁,稍后再试或联系管理员!");
+        }
+        if(YesOrNotEnum.N.getCode().equals(user.getAvailable())){
+            throw new DisabledAccountException("账号已被禁止使用,请与管理员联系!");
+        }
+
+        // 可自定义
+        SimpleAuthenticationInfo authenticationInfo = new SimpleAuthenticationInfo(
+                loginName,
+                user.getPassword(),
+                ByteSource.Util.bytes(user.getCredentialsSalt(password)),
+                getName()
+        );
+
+        redisInfoUtil.commit(user, loginName);
+
+        return authenticationInfo;
+    }
+}

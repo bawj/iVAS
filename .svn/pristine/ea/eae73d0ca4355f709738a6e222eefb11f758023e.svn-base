@@ -1,0 +1,25 @@
+package com.yn.electricity.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yn.electricity.dao.AlarmConfigurationDAO;
+import com.yn.electricity.qto.AlarmConfigurationDTO;
+import com.yn.electricity.vo.AlarmConfigurationVO;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * @author 报警配置
+ */
+public interface AlarmConfigurationMapper extends BaseMapper<AlarmConfigurationDAO> {
+
+
+    /**
+     * 查询配置列表
+     * @param alarmConfiguration alarmConfigurationDTO
+     * @return List
+     */
+    List<AlarmConfigurationVO> findConfiguration(AlarmConfigurationDTO alarmConfiguration);
+
+
+}

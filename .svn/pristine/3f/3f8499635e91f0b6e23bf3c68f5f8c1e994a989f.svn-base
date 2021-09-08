@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.RoleMenuMapper">
+
+    <insert id="insert" parameterType="java.util.List">
+        <foreach collection="list" index="ind" item="it" separator=";">
+            insert into role_menu(menu_id, ip_role_id)
+            VALUES(#{it}, #{ipRoleId})
+        </foreach>
+
+    </insert>
+
+    <delete id="deleteByMenuId" parameterType="java.util.List">
+        DELETE FROM role_menu WHERE menu_id in(
+            <foreach collection="list" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+        )
+    </delete>
+
+    <delete id="deleteByIpRoleId" parameterType="java.util.List">
+        DELETE FROM role_menu WHERE ip_role_id in(
+        <foreach collection="list" index="ind" item="it" separator=",">
+            #{it}
+        </foreach>
+        )
+    </delete>
+
+    <select id="selectByIpRoleId" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT
+               menu_id
+        FROM role_menu
+        WHERE ip_role_id = #{ipRoleId}
+    </select>
+</mapper>

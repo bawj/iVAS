@@ -1,0 +1,54 @@
+package com.yn.electricity.service.impl;
+
+import com.yn.electricity.dao.CameraDAO;
+import com.yn.electricity.mapper.CameraMapper;
+import com.yn.electricity.qto.DeviceDTO;
+import com.yn.electricity.service.MapService;
+import com.yn.electricity.util.RedisInfoUtil;
+import com.yn.electricity.utils.BizBusinessUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import javax.annotation.Resource;
+import java.util.List;
+
+/**
+ * @author admin
+ * Date 2021/6/1 17:06
+ * Description 地图相关
+ **/
+@Service
+public class MapServiceImpl implements MapService {
+
+    @Resource
+    private RedisInfoUtil redisInfoUtil;
+    @Resource
+    private CameraMapper cameraMapper;
+    @Resource
+    private RedisInfoServiceImpl redisInfoService;
+
+    @Override
+    public List<DeviceDTO> mapFindDevice() {
+        List<DeviceDTO> deviceList = redisInfoUtil.getDeviceList();
+        if (CollectionUtils.isEmpty(deviceList)){
+            redisInfoService.redisUpdateDevice();
+        }
+        return deviceList;
+    }
+
+    @Override
+    public String mapCameraLonLat(Integer cameraId, Double lng, Double lat) {
+        CameraDAO cameraDAO = cameraMapper.selectById(cameraId);
+        if (cameraDAO == null){
+            BizBusinessUtils.bizBusinessException("cameraId 错误");
+        }
+        cameraDAO.setLongitude(lng);
+        cameraDAO.setLatitude(lat);
+        cameraMapper.updateById(cameraDAO);
+        // TODO: 2021/6/1 这里优化 没有必要删除在新增 缓存
+        redisInfoService.redisUpdateDevice();
+        return null;
+    }
+
+
+}

@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: ynvideo-manager
+  cloud:
+    nacos:
+      config:
+        server-addr: 192.168.0.39:8848
+        namespace: b27a548a-4afe-4c31-a4db-4c2e8d8c0605
+        name: ynvideo-manager
+      discovery:
+        server-addr: 192.168.0.39:8848
+        namespace: b27a548a-4afe-4c31-a4db-4c2e8d8c0605

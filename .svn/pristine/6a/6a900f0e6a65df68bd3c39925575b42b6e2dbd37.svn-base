@@ -1,0 +1,13 @@
+package com.yn.electricity.service;
+
+/**
+ * @author redis缓存更新
+ */
+public interface RedisInfoService {
+
+    /**
+     * 更新设备缓存信息
+     */
+    void redisUpdateDevice();
+
+}

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.DepartmentMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.Department">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="code" property="code" jdbcType="VARCHAR"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="parent_code" property="parentCode" jdbcType="VARCHAR"/>
+        <result column="level" property="level" jdbcType="VARCHAR"/>
+        <result column="available" property="available" jdbcType="VARCHAR"/>
+        <result column="sort" property="sort" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <delete id="deleteById" parameterType="java.util.List">
+        DELETE FROM department WHERE id in(
+            <foreach collection="list" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+        )
+    </delete>
+
+    <select id="selectByCode" resultMap="BaseResultMap" parameterType="java.util.List">
+        SELECT d.id, d.`code`, d.available, d.`name`, d.parent_code, d.sort, d.create_time
+        FROM department d
+        WHERE d.code in(
+            <foreach collection="list" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+            )
+        <if test="null != available and ''!= available">
+            and d.available = #{available}
+        </if>
+        ORDER BY d.sort asc
+    </select>
+
+    <select id="selectByParentCode" resultMap="BaseResultMap" parameterType="java.util.List">
+        SELECT d.id, d.`code`, d.available, d.`name`, d.parent_code, d.sort, d.create_time
+        FROM department d
+        WHERE  d.parent_code in(
+        <foreach collection="list" index="ind" item="it" separator=",">
+            #{it}
+        </foreach>
+        )
+        <if test="null != available and ''!= available">
+            and d.available = #{available}
+        </if>
+        ORDER BY d.sort asc
+    </select>
+</mapper>

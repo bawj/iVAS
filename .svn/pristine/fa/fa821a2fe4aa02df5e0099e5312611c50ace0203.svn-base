@@ -1,0 +1,17 @@
+package com.yn.electricity.mapper;
+
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yn.electricity.dao.AlarmConfigurationTypeDAO;
+
+import java.util.Map;
+
+/**
+ * @author 报警配置类型
+ */
+public interface AlarmConfigurationTypeMapper extends BaseMapper<AlarmConfigurationTypeDAO> {
+
+
+    Map<Object, Object> findAA();
+
+}

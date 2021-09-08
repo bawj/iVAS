@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.OrganizationMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.OrganizationDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="organization_id" property="organizationId" jdbcType="INTEGER"/>
+        <result column="sport" property="sport" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByNameNotId" resultMap="BaseResultMap">
+        select *
+        from organization
+        <where>
+            <if test="name != null and name != ''">
+                and `name` = #{name}
+            </if>
+            <if test="id != null">
+                and id != #{id}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByOrganizationIdAndName" resultType="com.yn.electricity.vo.OrganizationVO">
+        select *
+        from organization
+        <where>
+            <if test="name != null and name != ''">
+                and `name` like CONCAT('%' , #{name} , '%')
+            </if>
+            <if test="organizationId != null">
+                and organization_id = #{organizationId}
+            </if>
+            <if test="null != dataPermission.depCodeList and dataPermission.depCodeList.size > 0">
+                and department_code in(
+                <foreach collection="dataPermission.depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != dataPermission.companyCodeList and dataPermission.companyCodeList.size > 0">
+                and company_code in(
+                <foreach collection="dataPermission.companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+        order by `sport`,`create_time` asc
+    </select>
+
+    <select id="selectByOrganizationId" resultType="com.yn.electricity.vo.OrganizationSubordinateVO">
+        select *
+        from organization
+        <where>
+            organization_id = #{organizationId}
+        </where>
+        order by sport asc
+    </select>
+
+    <delete id="deleteByIdList" parameterType="java.util.ArrayList">
+        delete
+        from organization
+        where id in (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
+    </delete>
+
+    <select id="selectListById" resultType="com.yn.electricity.dao.OrganizationDAO">
+        select *
+        from organization
+        where id in (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>)
+    </select>
+
+    <!-- 查询组织机构子集 -->
+    <select id="selectByPId" resultType="com.yn.electricity.vo.OrganizationAndDeviceVO">
+        select id, name, organization_id as organizationId, sport
+        from organization
+        <where>
+            <if test="null != depCode and depCode != ''">
+                and department_code = #{depCode}
+            </if>
+            <if test="null != pId">
+                and organization_id = #{pId}
+            </if>
+        </where>
+        order by sport asc
+    </select>
+
+
+    <select id="selectOrganizationById" resultType="com.yn.electricity.dao.OrganizationDAO">
+        select *
+        from organization
+        <where>
+            id = #{id}
+            <if test="null != dataPermission.depCodeList and dataPermission.depCodeList.size > 0">
+                and department_code in(
+                <foreach collection="dataPermission.depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != dataPermission.companyCodeList and dataPermission.companyCodeList.size > 0">
+                and company_code in(
+                <foreach collection="dataPermission.companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="searchOrganizationDevCamera" resultType="com.yn.electricity.vo.SearchOrganDevCameraVO">
+        SELECT id, `name`, department_code, `type` FROM (
+                          SELECT id, `name`, department_code, 1 AS type
+                          FROM
+                              organization
+                          WHERE
+                              `name` LIKE CONCAT( '%', #{name}, '%' )
+
+                          UNION ALL
+
+                          SELECT id, `name`, department_code, 2 AS type
+                          FROM
+                              device
+                          WHERE
+                              `name` LIKE CONCAT( '%', #{name}, '%' )
+
+                          UNION ALL
+
+                          SELECT c.id, c.`name`, d.department_code, 3 AS type
+                          FROM
+                              camera c LEFT JOIN device d ON c.dev_id = d.id
+                          WHERE
+                              c.`name` LIKE CONCAT( '%', #{name}, '%')
+                      ) as result
+        <where>
+            <if test="null != dataPermission.depCodeList and dataPermission.depCodeList.size > 0">
+                and result.department_code in(
+                <foreach collection="dataPermission.depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByDepCode" resultType="com.yn.electricity.dao.OrganizationDAO">
+        select *
+        from organization
+        <where>
+            <if test="id != null">
+               and id = #{id}
+            </if>
+            <if test="depCode != null and depCode != ''">
+              and department_code = #{depCode}
+            </if>
+        </where>
+        order by organization_id
+        limit 0,1
+    </select>
+
+</mapper>

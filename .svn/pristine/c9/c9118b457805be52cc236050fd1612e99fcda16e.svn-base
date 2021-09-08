@@ -1,0 +1,64 @@
+package com.yn.electricity.dao;
+
+import com.yn.electricity.enums.MenuTypeEnum;
+import lombok.Data;
+
+import java.util.Date;
+
+
+/**
+ * @ClassName: Permission
+ * @Author: zzs
+ * @Date: 2021/1/21 10:02
+ * @Description: 权限实体类
+ */
+@Data
+public class Menu {
+
+    /**
+     * 自增
+     */
+    private Integer id;
+    /**
+     * 编码
+     */
+    private String code;
+    /**
+     * 菜单图标
+     */
+    private String icon;
+    /**
+     * 权限名称
+     */
+    private String menuName;
+    /**
+     * 权限路由
+     */
+    private String menuRoute;
+    /**
+     * 父Code
+     */
+    private String parentCode;
+    /**
+     * 节点位置 提供枚举
+     * {@link MenuTypeEnum}
+     */
+    private String menuType;
+    /**
+     * 路由类型
+     */
+    private String routeType;
+    /**
+     * 是否可用，y是n否
+     */
+    private String available;
+    /**
+     * 排序
+     */
+    private Integer sort;
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+
+}

@@ -1,0 +1,21 @@
+package com.yn.electricity.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yn.electricity.dao.AcOrganizationCameraGroupDAO;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * @author alarm_configuration 和 organization 、cameragroup 中间表
+ */
+public interface AcOrganizationCameraGroupMapper extends BaseMapper<AcOrganizationCameraGroupDAO> {
+
+    /**
+     * 批量保存
+     * @param acList list
+     * @return int
+     */
+    Integer insertList(@Param("acList") List<AcOrganizationCameraGroupDAO> acList);
+
+}

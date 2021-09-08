@@ -1,0 +1,144 @@
+package com.yn.electricity.controller.device;
+
+import com.github.pagehelper.PageInfo;
+import com.yn.electricity.request.OrganizationAlterRequest;
+import com.yn.electricity.request.OrganizationSaveRequest;
+import com.yn.electricity.request.SearchOrganizationRequest;
+import com.yn.electricity.result.OrganizationResult;
+import com.yn.electricity.service.OrganizationService;
+import com.yn.electricity.util.ValidationUtils;
+import com.yn.electricity.util.log.annotation.SystemBeforeLog;
+import com.yn.electricity.vo.CameraVO;
+import com.yn.electricity.vo.OrganizationVO;
+import com.yn.electricity.vo.SearchOrganDevCameraVO;
+import com.yn.electricity.web.WebResult;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.util.List;
+
+/**
+ * @author admin
+ * Date 2021/3/15 14:34
+ * Description 组织机构管理
+ **/
+@Validated
+@Api(tags = "组织机构管理相关")
+@RestController
+public class OrganizationController {
+
+    @Resource
+    private OrganizationService organizationService;
+
+    @ApiOperation(value = "查询组织机构下的数据", notes = "查询组织机构下的数据")
+    @GetMapping(value = "/organization/subordinate")
+    @ApiImplicitParam(name = "id", value = "id", required = true, dataType = "Integer", paramType = "query")
+    public void organizationSubordinate(Integer id, HttpServletResponse servletResponse) {
+        WebResult.success(organizationService.organizationSubordinate(id), servletResponse);
+    }
+
+    @ApiOperation(value = "根据id 查询上级 编辑前查询信息" , notes = "根据id 查询上级 编辑前查询信息")
+    @GetMapping(value = "/organization/superior")
+    @ApiImplicitParam(name = "id", value = "id", required = true, dataType = "Integer", paramType = "query")
+    public void superiorOrganization(@Valid @NotNull(message = "id 不能为空") Integer id, HttpServletResponse servletResponse) {
+        WebResult.success(organizationService.superiorOrganization(id), servletResponse);
+    }
+
+    @SystemBeforeLog(menuName = "设备组织管理", description = "添加组织")
+    @ApiOperation(value = "添加组织机构", notes = "添加组织机构")
+    @PostMapping(value = "/organization/add")
+    @RequiresPermissions(value = "/organization/add")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "name", value = "组织名称", required = true, dataType = "String", paramType = "query"),
+            @ApiImplicitParam(name = "organizationId", value = "上级id", required = true, dataType = "Integer", paramType = "query"),
+            @ApiImplicitParam(name = "sport", value = "排序", required = true, dataType = "Integer", paramType = "query"),
+    })
+    public void addOrganization(@RequestBody OrganizationSaveRequest organizationRequest, HttpServletResponse servletResponse) {
+        ValidationUtils.checkParam(organizationRequest);
+        WebResult.success(organizationService.addOrganization(organizationRequest), servletResponse);
+    }
+
+    @SystemBeforeLog(menuName = "设备组织管理", description = "修改组织")
+    @ApiOperation(value = "修改组织机构", notes = "修改组织机构")
+    @RequiresPermissions(value = "/organization/alter")
+    @PostMapping(value = "/organization/alter")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id", required = true, dataType = "Integer", paramType = "query"),
+            @ApiImplicitParam(name = "name", value = "组织名称", required = true, dataType = "String", paramType = "query"),
+            @ApiImplicitParam(name = "organizationId", value = "上级id", required = true, dataType = "Integer", paramType = "query"),
+            @ApiImplicitParam(name = "sport", value = "排序", required = true, dataType = "Integer", paramType = "query"),
+    })
+    public void alterOrganization(@RequestBody OrganizationAlterRequest organizationRequest, HttpServletResponse servletResponse) {
+        ValidationUtils.checkParam(organizationRequest);
+        WebResult.success(organizationService.alterOrganization(organizationRequest), servletResponse);
+    }
+
+
+    @SystemBeforeLog(menuName = "设备组织管理", description = "删除组织")
+    @ApiOperation(value = "删除组织机构", notes = "删除组织机构")
+    @RequiresPermissions(value = "/organization/delete")
+    @PostMapping(value = "/organization/delete")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id", required = true, dataType = "Integer", paramType = "query"),
+    })
+    public void deleteOrganization(@RequestBody List<Integer> ids, HttpServletResponse servletResponse) {
+        WebResult.success(organizationService.deleteOrganization(ids), servletResponse);
+    }
+
+
+    @ApiOperation(value = "查询组织机构", notes = "查询组织机构")
+    @GetMapping(value = "/organization/find")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "pageNum", value = "分页数量", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "pageSize", value = "分页", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "name", value = "组织机构名称", dataTypeClass = String.class),
+    })
+    public void findOrganization(@RequestParam(name = "pageNum", required = false, defaultValue = "1") Integer pageNum,
+                                 @RequestParam(name = "pageSize", required = false, defaultValue = "30") Integer pageSize,
+                                 String name, HttpServletResponse servletResponse) {
+        PageInfo<OrganizationVO> pageInfo = organizationService.findOrganization(pageNum, pageSize, name);
+        WebResult.success(pageInfo, servletResponse);
+    }
+
+
+    @ApiOperation(value = "查询组织机构及设备", notes = "查询组织机构及设备")
+    @GetMapping(value = "/find/organization/and/device")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "机构id", required = true),
+    })
+    public void findOrganizationAndDevice(Integer id,HttpServletResponse response) {
+        OrganizationResult result = organizationService.findOrganizationAndDevice(id);
+        WebResult.success(result, response);
+    }
+
+    @ApiOperation(value = "根据组织结构id查询镜头" , notes = "根据组织机构查询镜头")
+    @GetMapping(value = "/find/organization_camera")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "机构id", required = true),
+    })
+    public void findOrganizationCamera(Integer id,HttpServletResponse response){
+        List<CameraVO> result = organizationService.findOrganizationCamera(id);
+        WebResult.success(result, response);
+    }
+
+    @ApiOperation(value = "根据组织机构名称、设备名称、镜头名称、搜索" , notes = "根据组织机构名称、设备名称、镜头名称、搜索")
+    @PostMapping(value = "/search/organization_device_camera")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "name", value = "组织机构名称、设备名称、镜头名称", type = "String" , required = true),
+    })
+    public void searchOrganizationDevCamera(@RequestBody SearchOrganizationRequest searchOrganizationRequest, HttpServletResponse response){
+        ValidationUtils.checkParam(searchOrganizationRequest);
+        List<SearchOrganDevCameraVO> result = organizationService.searchOrganizationDevCamera(searchOrganizationRequest);
+        WebResult.success(result, response);
+    }
+
+}

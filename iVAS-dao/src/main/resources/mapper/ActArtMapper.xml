@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.ActArtMapper" >
+
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.ActArtDAO" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="alarm_configuration_type_id" property="alarmConfigurationTypeId" jdbcType="INTEGER" />
+        <result column="alarm_response_type_id" property="alarmResponseTypeId" jdbcType="INTEGER" />
+   </resultMap>
+
+</mapper>

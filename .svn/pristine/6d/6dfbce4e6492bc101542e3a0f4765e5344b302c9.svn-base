@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.LogInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.LogInfo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="ip" property="ip" jdbcType="VARCHAR"/>
+        <result column="menu_route" property="menuRoute" jdbcType="VARCHAR"/>
+        <result column="menu_name" property="menuName" jdbcType="VARCHAR"/>
+        <result column="operate_name" property="operateName" jdbcType="VARCHAR"/>
+        <result column="operate_id" property="operateId" jdbcType="VARCHAR"/>
+        <result column="ext" property="ext" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="queryListPage" resultMap="BaseResultMap" parameterType="com.yn.electricity.qto.BaseQuery">
+        SELECT
+            id, ip, menu_route, menu_name, operate_name, operate_id, ext, description, create_time
+        FROM log_info
+        <where>
+            <if test="null != query.operateName and '' != query.operateName">
+                operate_name like CONCAT('%',#{query.operateName},'%')
+            </if>
+            <if test="null != query.description and '' != query.description">
+                description like CONCAT('%',#{query.description},'%')
+            </if>
+            <if test="null != query.startTime and ''!=query.startTime">
+                and create_time &gt; #{query.startTime}
+            </if>
+            <if test="null != query.endTime and ''!=query.endTime">
+                and create_time &lt; #{query.endTime}
+            </if>
+            <if test="null != idList and idList.size > 0">
+                and id in(
+                <foreach collection="idList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+</mapper>

@@ -1,0 +1,26 @@
+package com.yn.electricity.service.pas;
+
+import com.yn.electricity.dao.DeviceDAO;
+
+import java.util.List;
+
+/**
+ * @author pas 设备相关service
+ */
+public interface PasDeviceService {
+
+    /**
+     * 添加设备到pas
+     * @param deviceList device
+     * @return int
+     */
+    Integer sendAddDevicePas(List<DeviceDAO> deviceList);
+
+
+    /**
+     * 删除设备pas
+     * @param ids 设备表 device  主键
+     * @return Integer
+     */
+    Integer sendDelDeviceService(List<Integer> ids);
+}

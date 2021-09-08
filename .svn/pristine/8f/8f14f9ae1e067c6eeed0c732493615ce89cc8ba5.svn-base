@@ -1,0 +1,73 @@
+package com.yn.electricity.service.alarm.impl;
+
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.google.common.collect.Maps;
+import com.yn.electricity.dao.AlarmConfigurationTypeDAO;
+import com.yn.electricity.dao.AlarmInfoDAO;
+import com.yn.electricity.mapper.AlarmConfigurationTypeMapper;
+import com.yn.electricity.mapper.AlarmInfoMapper;
+import com.yn.electricity.qto.AlarmManagerDTO;
+import com.yn.electricity.result.UserResult;
+import com.yn.electricity.service.alarm.AlarmManagerService;
+import com.yn.electricity.util.RedisInfoUtil;
+import com.yn.electricity.utils.BizBusinessUtils;
+import com.yn.electricity.vo.AlarmConfigurationTypeVO;
+import com.yn.electricity.vo.AlarmInfoVO;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * @author admin
+ * Date 2021/5/31 13:38
+ * Description
+ **/
+@Service
+public class AlarmManagerServiceImpl implements AlarmManagerService {
+
+    @Resource
+    private AlarmInfoMapper alarmInfoMapper;
+    @Resource
+    private RedisInfoUtil redisInfoUtil;
+    @Resource
+    private AlarmConfigurationTypeMapper alarmConfigurationTypeMapper;
+
+    @Override
+    public PageInfo<AlarmInfoVO> findAlarm(AlarmManagerDTO alarmManager) {
+        PageHelper.startPage(alarmManager.getPageNum() , alarmManager.getPageSize());
+        return new PageInfo<>(alarmInfoMapper.findAlarm(alarmManager));
+    }
+
+    @Override
+    public List<AlarmConfigurationTypeVO> findAlarmConfigurationType() {
+        List<AlarmConfigurationTypeVO> typeList = new ArrayList<>();
+        List<AlarmConfigurationTypeDAO> configurationTypeList = alarmConfigurationTypeMapper.selectList(null);
+        configurationTypeList.forEach(configurationTypeDAO -> {
+            AlarmConfigurationTypeVO type = new AlarmConfigurationTypeVO();
+            BeanUtils.copyProperties(configurationTypeDAO , type);
+            typeList.add(type);
+        });
+        return typeList;
+    }
+
+    @Override
+    public String alarmConfirm(Integer id, String remarks) {
+        AlarmInfoDAO alarmInfoDAO = alarmInfoMapper.selectById(id);
+        if (alarmInfoDAO == null){
+            BizBusinessUtils.bizBusinessException("id 错误");
+        }
+        alarmInfoDAO.setRemarks(remarks);
+        UserResult userResult = redisInfoUtil.getUserResult();
+        alarmInfoDAO.setConfirmPeople(userResult.getUserName());
+        alarmInfoDAO.setConfirmStatus(true);
+        alarmInfoDAO.setConfirmTime(new Date());
+        alarmInfoMapper.updateById(alarmInfoDAO);
+        return null;
+    }
+
+}

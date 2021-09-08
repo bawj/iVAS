@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.CameraMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.CameraDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="dev_id" property="devId" jdbcType="VARCHAR"/>
+        <result column="channel_no" property="channelNo" jdbcType="INTEGER"/>
+        <result column="latitude" property="latitude" jdbcType="DOUBLE"/>
+        <result column="longitude" property="longitude" jdbcType="DOUBLE"/>
+        <result column="is_online" property="isOnline" jdbcType="INTEGER"/>
+        <result column="rtsp_url" property="rtspUrl" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByCameraGroupId" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        SELECT c.id, c.dev_id, c.name, c.channel_no, c.latitude, c.longitude, c.is_online
+        FROM camera_group_camera gc INNER JOIN camera c ON gc.camera_id = c.id
+        WHERE gc.camera_group_id = #{cameraGroupId}
+    </select>
+    
+
+</mapper>

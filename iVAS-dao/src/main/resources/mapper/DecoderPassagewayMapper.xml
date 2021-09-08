@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.DecoderPassagewayMapper">
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.DecoderPassagewayDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="decoder_id" property="decoderId" jdbcType="INTEGER"/>
+        <result column="tv_wall_id" property="tvWallId" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByDecoderId" resultType="com.yn.electricity.vo.PassagewayInfoVO">
+        SELECT dp.id     as passagewayId,
+               dp.`name` as passagewayName,
+               tw.id     as tvWallId,
+               tw.`name` as tvWallName
+        FROM decoder_passageway dp
+                 LEFT JOIN tv_wall tw ON dp.tv_wall_id = tw.id
+        WHERE dp.decoder_id = #{decoderId}
+    </select>
+
+</mapper>

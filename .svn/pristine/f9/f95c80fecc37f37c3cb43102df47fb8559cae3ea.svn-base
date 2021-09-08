@@ -1,0 +1,79 @@
+package com.yn.electricity.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yn.electricity.dao.OrganizationDAO;
+import com.yn.electricity.qto.BaseQuery;
+import com.yn.electricity.vo.OrganizationSubordinateVO;
+import com.yn.electricity.vo.OrganizationVO;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * @author 组织结构
+ */
+public interface OrganizationMapper extends BaseMapper<OrganizationDAO> {
+
+    /**
+     * 根据name查询 不等于 id的
+     *
+     * @param name 名称
+     * @param id   id
+     * @return OrganizationDAO
+     */
+    OrganizationDAO selectByNameNotId(String name, Integer id);
+
+    /**
+     * 根据OrganizationId和名称模糊查询
+     *
+     * @param organizationId organizationId
+     * @param name           名称
+     * @param dataPermission dataPermission
+     * @return list
+     */
+    List<OrganizationVO> selectByOrganizationIdAndName(@Param("organizationId") Integer organizationId, @Param("name") String name, @Param("dataPermission") BaseQuery dataPermission);
+
+    /**
+     * 根据OrganizationId 查询下级数据
+     *
+     * @param organizationId OrganizationId
+     * @param dataPermission 权限
+     * @return List
+     */
+    List<OrganizationSubordinateVO> selectByOrganizationId(@Param("organizationId") Integer organizationId, @Param("dataPermission") BaseQuery dataPermission);
+
+    /**
+     * 删除多个
+     *
+     * @param ids ids
+     * @return integer
+     */
+    Integer deleteByIdList(@Param("ids") List<Integer> ids);
+
+    /**
+     * 批量查询id
+     *
+     * @param ids ids
+     * @return List
+     */
+    List<OrganizationDAO> selectListById(List<Integer> ids);
+
+    /**
+     * 根据id查询所有子集
+     *
+     * @param query          query
+     * @param pId            pId
+     * @return List
+     */
+    List<OrganizationDAO> selectByPId(@Param("query") BaseQuery query, @Param("pId") Integer pId);
+
+
+    /**
+     * 根据id查询组织机构
+     * @param id id
+     * @param dataPermission dataPermission
+     * @return OrganizationDAO
+     */
+    OrganizationDAO selectOrganizationById(@Param("id") Integer id,@Param("dataPermission") BaseQuery dataPermission);
+
+}

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.DeviceMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.DeviceDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="device_type_id" property="deviceTypeId" jdbcType="INTEGER"/>
+        <result column="service_id" property="serviceId" jdbcType="INTEGER"/>
+        <result column="organization_id" property="organizationId" jdbcType="INTEGER"/>
+        <result column="camera_group_id" property="cameraGroupId" jdbcType="INTEGER"/>
+        <result column="ip" property="ip" jdbcType="VARCHAR"/>
+        <result column="port" property="port" jdbcType="VARCHAR"/>
+        <result column="register_account" property="registerAccount" jdbcType="VARCHAR"/>
+        <result column="register_password" property="registerPassword" jdbcType="VARCHAR"/>
+        <result column="code" property="code" jdbcType="VARCHAR"/>
+        <result column="longitude" property="longitude" jdbcType="VARCHAR"/>
+        <result column="latitude" property="latitude" jdbcType="VARCHAR"/>
+        <result column="company_code" property="companyCode" jdbcType="VARCHAR"/>
+        <result column="department_code" property="departmentCode" jdbcType="VARCHAR"/>
+        <result column="user_ip_id" property="userIpId" jdbcType="VARCHAR"/>
+        <result column="create_Time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="update_user_id" property="updateUserId" jdbcType="INTEGER"/>
+    </resultMap>
+
+
+    <select id="selectByNameNotId" resultMap="BaseResultMap">
+        select *
+        from device
+        where name = #{name}
+          and id != #{id}
+    </select>
+
+    <select id="selectDevice" resultType="com.yn.electricity.vo.DeviceVO">
+        SELECT
+        d.id,
+        s.id as serviceId,
+        o.id as organizationId,
+        cg.id as cameraGroupId,
+        d.`name` as name,
+        dt.id as deviceTypeId,
+        dt.`name` as deviceTypeName,
+        d.ip,
+        d.`port`,
+        d.register_account as registerAccount,
+        d.register_password as registerPassword,
+        s.`name` as serviceName,
+        d.`code`,
+        d.longitude,
+        d.latitude,
+        o.`name` as organizationName,
+        cg.`name` as cameraGroupName,
+        d.create_time as createTime
+        FROM
+        device d
+        LEFT JOIN device_type dt ON d.device_type_id = dt.id
+        LEFT JOIN service s ON d.service_id = s.id
+        LEFT JOIN organization o ON d.organization_id = o.id
+        LEFT JOIN camera_group cg ON d.camera_group_id = cg.id
+        <where>
+            <if test="deviceQuery.name != null and deviceQuery.name != ''">
+                AND d.`name` LIKE CONCAT('%',#{deviceQuery.name},'%')
+            </if>
+            <if test="deviceQuery.deviceTypeId != null">
+                AND dt.id = #{deviceQuery.deviceTypeId}
+            </if>
+            <if test="deviceQuery.organizationName != null and deviceQuery.organizationName != ''">
+                AND o.`name` LIKE CONCAT('%',#{deviceQuery.organizationName},'%')
+            </if>
+            <if test="deviceQuery.cameraGroupName != null and deviceQuery.cameraGroupName != ''">
+                AND cg.`name` LIKE CONCAT('%',#{deviceQuery.cameraGroupName},'%')
+            </if>
+            <if test="deviceQuery.startTime != null and deviceQuery.startTime != '' and deviceQuery.endTime != null and deviceQuery.endTime != ''">
+                AND d.create_time BETWEEN #{deviceQuery.startTime} AND #{deviceQuery.endTime}
+            </if>
+            <if test="null != dataPermission.depCodeList and dataPermission.depCodeList.size > 0">
+                and d.department_code in(
+                <foreach collection="dataPermission.depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != dataPermission.companyCodeList and dataPermission.companyCodeList.size > 0">
+                and d.company_code in(
+                <foreach collection="dataPermission.companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+        order by d.create_time desc
+    </select>
+
+
+    <update id="updateByIdList" parameterType="java.util.ArrayList">
+        <foreach collection="deviceList" item="it" index="ind" separator=";">
+            update device
+            <set>
+                name=#{it.name},
+                device_type_id = #{it.deviceTypeId},
+                service_id = #{it.serviceId},
+                organization_id = #{it.organizationId},
+                camera_group_id = #{it.cameraGroupId},
+                ip = #{it.ip},
+                `port` = #{it.port},
+                register_account = #{it.registerAccount},
+                register_password = #{it.registerPassword},
+                `code` = #{it.code},
+                `longitude` = #{it.longitude},
+                `latitude` = #{it.latitude},
+                company_code = #{it.companyCode},
+                department_code = #{it.departmentCode},
+                user_ip_id = #{it.userIpId},
+                create_time = #{it.createTime},
+                update_time = #{it.updateTime},
+                update_user_id = #{it.updateUserId}
+            </set>
+            where id = #{it.id}
+        </foreach>
+    </update>
+
+    <insert id="insertList" parameterType="java.util.List">
+        <foreach collection="dList" index="ind" item="it" separator=";">
+            INSERT INTO device
+            (`name`, `device_type_id`, `service_id`, `organization_id`, `camera_group_id`, `ip`,
+            `port`,`register_account`,
+            `register_password`, `code`, `longitude`, `latitude`, `company_code`, `department_code`,
+            `user_ip_id`,`create_time`,
+            `update_time`, `update_user_id`)
+            VALUES
+            (#{it.name},#{it.deviceTypeId},#{it.serviceId},#{it.organizationId},
+            #{it.cameraGroupId},#{it.ip},#{it.port},#{it.registerAccount},
+            #{it.registerPassword},#{it.code},#{it.longitude},#{it.latitude},
+            #{it.companyCode},#{it.departmentCode},#{it.userIpId},#{it.createTime},
+            #{it.updateTime},#{it.updateUserId})
+        </foreach>
+    </insert>
+
+    <select id="selectByCodeNotId" resultType="com.yn.electricity.dao.DeviceDAO">
+        select *
+        from device
+        where code = #{code}
+          and id != #{id}
+    </select>
+
+    <select id="selectByOrganizationId" resultMap="BaseResultMap" parameterType="com.yn.electricity.qto.BaseQuery">
+        SELECT id,
+               name,
+               device_type_id
+        FROM device
+        <where>
+            organization_id = #{organizationId}
+            <if test="null != query.depCodeList and query.depCodeList.size > 0">
+                and department_code in(
+                <foreach collection="query.depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != query.companyCodeList and query.companyCodeList.size > 0">
+                and company_code in(
+                <foreach collection="query.companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+    <resultMap id="BaseExtResultMap" type="com.yn.electricity.vo.DeviceResultVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="device_type_id" property="deviceTypeId" jdbcType="INTEGER"/>
+        <result column="service_id" property="serviceId" jdbcType="INTEGER"/>
+        <result column="organization_id" property="organizationId" jdbcType="INTEGER"/>
+        <result column="camera_group_id" property="cameraGroupId" jdbcType="INTEGER"/>
+        <result column="ip" property="ip" jdbcType="VARCHAR"/>
+        <result column="port" property="port" jdbcType="VARCHAR"/>
+    </resultMap>
+    <select id="selectByCameraGroupId" resultMap="BaseExtResultMap">
+        SELECT
+        id, name, device_type_id
+        FROM device
+        <where>
+            camera_group_id=#{id}
+            <if test="null != query.depCodeList and query.depCodeList.size > 0">
+                and department_code in(
+                <foreach collection="query.depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != query.companyCodeList and query.companyCodeList.size > 0">
+                and company_code in(
+                <foreach collection="querycompanyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByIdAndServiceOnline" resultType="com.yn.electricity.dao.ServiceDAO">
+        SELECT
+        *
+        FROM
+        device d
+        LEFT JOIN service s ON d.service_id = s.id
+        <where>
+            s.online = 0
+            and d.id IN (
+            <foreach collection="ids" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+            )
+        </where>
+
+    </select>
+
+</mapper>

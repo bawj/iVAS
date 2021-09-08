@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yn.electricity.mapper.ArtAcMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.ArtAcDAO">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="alarm_response_type_id" jdbcType="INTEGER" property="alarmResponseTypeId"/>
+        <result column="alarm_configuration_id" jdbcType="INTEGER" property="alarmConfigurationId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+
+    <insert id="insertList" parameterType="java.util.List">
+        insert into art_ac
+        (alarm_response_type_id,
+        alarm_configuration_id,
+        create_time)
+        values
+        <foreach collection="artAcList" item="art" separator=",">
+            (#{art.alarmResponseTypeId},
+            #{art.alarmConfigurationId},
+            #{art.createTime})
+        </foreach>
+    </insert>
+
+    <select id="findArtAcByAlarmConfigurationId" resultType="com.yn.electricity.vo.ResponseTypeVO">
+        select art.id,
+               art.type_name as typeName
+        from art_ac aa
+                 left join alarm_response_type art on aa.alarm_response_type_id = art.id
+        where aa.alarm_configuration_id = #{alarmConfigurationId}
+    </select>
+
+</mapper>

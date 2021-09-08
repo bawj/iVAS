@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.DecoderPassagewayCameraMapper">
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.DecoderPassagewayCameraDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="camera_id" property="cameraId" jdbcType="INTEGER"/>
+        <result column="decoder_passageway_id" property="decoderPassagewayId" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <insert id="insertList" parameterType="java.util.List">
+        insert into decoder_passageway_camera
+        (camera_id, decoder_passageway_id)
+        values
+        <foreach collection="decoderPassagewayCameraList" item="item" separator=",">
+            (#{item.cameraId},#{item.decoderPassagewayId})
+        </foreach>
+    </insert>
+
+    <select id="selectByPassagewayListId" resultType="com.yn.electricity.vo.DecoderPassagewayCameraVO">
+        select dpc.camera_id as cameraId,
+               c.name as cameraName
+        from decoder_passageway_camera dpc
+                 left join camera c on dpc.camera_id = c.id
+        where decoder_passageway_id = #{passagewayId}
+    </select>
+</mapper>

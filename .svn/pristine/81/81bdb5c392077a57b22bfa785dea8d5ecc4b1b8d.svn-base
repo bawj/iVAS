@@ -1,0 +1,39 @@
+package com.yn.electricity.qto;
+
+import com.yn.electricity.dao.CameraDAO;
+import lombok.Data;
+
+import java.util.List;
+
+/**
+ * @author admin
+ * Date 2021/6/1 11:35
+ * Description 设备信息
+ **/
+@Data
+public class DeviceDTO {
+
+    /**
+     * device主键
+     */
+    private Integer id;
+
+    /**
+     * 设备名称
+     */
+    private String devName;
+
+    /**
+     * 经度
+     */
+    private Double longitude;
+
+    /**
+     * 纬度
+     */
+    private Double latitude;
+
+
+    private List<CameraDAO> cameraList;
+}
+

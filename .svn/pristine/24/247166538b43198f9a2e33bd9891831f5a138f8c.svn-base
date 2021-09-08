@@ -1,0 +1,69 @@
+package com.yn.electricity.dao;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.util.Date;
+
+/**
+ * @author 电视墙
+ */
+@Data
+@TableName(value = "tv_wall")
+@EqualsAndHashCode(callSuper = true)
+public class TvWallDAO extends BaseDAO{
+    /**
+     * 主键id
+     */
+    @TableId(value = "id" , type = IdType.AUTO)
+    private Integer id;
+
+    /**
+     * 配置名称
+     */
+    private String name;
+
+    /**
+     * 轮询时间
+     */
+    @TableField(value = "poll_time")
+    private Integer pollTime;
+
+    /**
+     * 是否禁用 1启用 0禁用
+     */
+    private Boolean status;
+
+    /**
+     * 备注说明
+     */
+    private String remarks;
+
+    /**
+     * 窗口分割 例 9窗口存储 9
+     */
+    @TableField(value = "window_division")
+    private String windowDivision;
+
+    /**
+     * 1代表关联组织机构 2代表关联镜头组
+     */
+    @TableField(value = "resources_source")
+    private Integer resourcesSource;
+
+    /**
+     * 添加时间
+     */
+    @TableField(value = "create_time")
+    private Date createTime;
+
+    /**
+     * 最后修改时间
+     */
+    @TableField(value = "update_time")
+    private Date updateTime;
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.TvWallOrganizationCameraGroupMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.TvWallOrganizationCameraGroupDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="tv_wall_id" property="tvWallId" jdbcType="INTEGER"/>
+        <result column="resources_id" property="resourcesId" jdbcType="INTEGER"/>
+        <result column="resources_source" property="resourcesSource" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <delete id="deleteByTvWallIds" parameterType="java.util.List">
+        delete
+        from tv_wall_organization_cameragroup
+        where tv_wall_id in (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
+    </delete>
+
+</mapper>

@@ -1,0 +1,15 @@
+package com.yn.electricity.constant;
+
+/**
+ * @ClassName: AccountConstant
+ * @Author: zzs
+ * @Date: 2021/7/13 10:46
+ * @Description: 常量账号
+ */
+public class AccountConstant {
+    /**
+     * 超级管理员
+     */
+    public final static String USER_NAME = "admin";
+
+}

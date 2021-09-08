@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: test
+
+mybatis-plus:
+  global-config:
+    banner: false
+
+ribbon:
+  eager-load:
+    enabled: true
+    clients: ynivpas-manager

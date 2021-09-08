@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yn.electricity.mapper.AlarmConfigurationMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.AlarmConfigurationDAO">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="alarm_configuration_type_id" jdbcType="INTEGER" property="alarmConfigurationTypeId"/>
+        <result column="distribution_time" jdbcType="VARCHAR" property="distributionTime"/>
+        <result column="response_eliminate" jdbcType="INTEGER" property="responseEliminate"/>
+        <result column="alarm_grade" jdbcType="INTEGER" property="alarmGrade"/>
+        <result column="remarks" jdbcType="VARCHAR" property="remarks"/>
+        <result column="enable" jdbcType="BIT" property="enable"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+    </resultMap>
+
+
+    <select id="findConfiguration" resultType="com.yn.electricity.vo.AlarmConfigurationVO">
+        SELECT
+            ac.id,
+            ac.`name`,
+            act.type_name AS configurationTypeName,-- 配置类型
+            GROUP_CONCAT( art.type_name ) AS responseName,-- 响应类型名称
+            ac.alarm_grade AS alarmGrade,
+            ac.distribution_time AS distributionTime,
+            ( SELECT COUNT( id ) FROM ac_organization_cameragroup acoc WHERE acoc.alarm_configuration_id = ac.id ) AS resourcesNumber,
+            ac.`enable`,
+            ac.remarks
+        FROM
+            alarm_configuration ac
+                LEFT JOIN alarm_configuration_type act ON act.id = ac.alarm_configuration_type_id
+                LEFT JOIN art_ac ON ac.id = art_ac.alarm_configuration_id
+                LEFT JOIN alarm_response_type art ON art_ac.alarm_response_type_id = art.id
+        WHERE
+            ac.`name` LIKE CONCAT( '%', #{name}, '%' )
+          AND act.id = #{alarmConfigurationTypeId}
+          AND art.id = #{responseTypeId}
+          AND ac.alarm_grade = #{alarmGrade}
+          AND ac.`enable` = #{enable}
+
+        <if test="null != alarmConfiguration.depCodeList and alarmConfiguration.depCodeList.size > 0">
+            and d.department_code in(
+            <foreach collection="alarmConfiguration.depCodeList" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+            )
+        </if>
+        <if test="null != alarmConfiguration.companyCodeList and alarmConfiguration.companyCodeList.size > 0">
+            and d.company_code in(
+            <foreach collection="alarmConfiguration.companyCodeList" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+            )
+        </if>
+        GROUP BY
+            ac.id
+    </select>
+
+</mapper>

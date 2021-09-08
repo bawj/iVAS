@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.TvWallMapper">
+
+    <select id="selectByNameNotId" resultType="com.yn.electricity.dao.TvWallDAO">
+        select *
+        from tv_wall
+        where name = #{name}
+          and id != #{id}
+    </select>
+
+    <select id="selectByNameAndStatus" resultType="com.yn.electricity.vo.TvWallVO" parameterType="com.yn.electricity.qto.BaseQuery">
+        SELECT
+        tv.id,
+        tv.`name`,
+        tv.poll_time AS pollTime,
+        tv.window_division AS windowDivision,
+        `status`,
+        remarks
+        FROM
+        tv_wall tv
+        <where>
+            <if test="name != null and name != ''">
+                and tv.`name` LIKE CONCAT('%',#{name},'%')
+            </if>
+            <if test="status != null">
+                and tv.`status` = #{status}
+            </if>
+            <if test="null != dataPermission.depCodeList and dataPermission.depCodeList.size > 0">
+                and tv.department_code in(
+                <foreach collection="dataPermission.depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != dataPermission.companyCodeList and dataPermission.companyCodeList.size > 0">
+                and tv.company_code in(
+                <foreach collection="dataPermission.companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+</mapper>

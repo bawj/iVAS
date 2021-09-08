@@ -1,0 +1,18 @@
+package com.yn.electricity.service;
+
+/**
+ * @author 时间同步
+ */
+public interface SystemConfigurationService {
+
+    String deviceTimeSynchronization(String syncDate);
+
+    String deviceAutomaticSynchronization(Boolean isOpen ,Integer interval);
+
+    /**
+     * 是否开启同步
+     * @param isOpen isOpen
+     * @param interval 同步时间单位天
+     */
+    void startSync(Boolean isOpen , Integer interval);
+}

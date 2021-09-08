@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.RoleMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.Role">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="role_name" property="roleName" jdbcType="VARCHAR"/>
+        <result column="available" property="available" jdbcType="VARCHAR"/>
+        <result column="app_id" property="appId" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="modify_time" property="modifyTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByPage" resultMap="BaseResultMap" parameterType="com.yn.electricity.qto.BaseQuery">
+        SELECT
+            id, role_name, available, app_id, `create_time`, modify_time, description
+        FROM `role`
+        <where>
+            <if test="null != roleName and '' != roleName">
+                and role_name like CONCAT('%',#{roleName},'%')
+            </if>
+            <if test="null != startTime">
+                and create_time &gt; #{startTime}
+            </if>
+            <if test="null != endTime">
+                and create_time &lt; #{endTime}
+            </if>
+            <if test="null != available and ''!= available">
+                and available = #{available}
+            </if>
+        </where>
+        ORDER BY id asc
+    </select>
+
+    <resultMap id="BaseResultUserIdMap" type="com.yn.electricity.vo.RoleMenuVo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="role_name" property="roleName" jdbcType="VARCHAR"/>
+
+        <collection property="menuList" column="{ipRoleId=ip_role_id, available=available}" select="com.yn.electricity.mapper.MenuMapper.selectByRoleId">
+
+        </collection>
+        <collection property="roleDeptList" column="ip_role_id" select="com.yn.electricity.mapper.RoleDeptMapper.selectByRoleId">
+
+        </collection>
+    </resultMap>
+    <select id="selectByUserId" resultMap="BaseResultUserIdMap" >
+        SELECT
+            r.id, r.ip_role_id, r.role_name, r.available
+        FROM user_role ur INNER JOIN role r ON ur.role_id=r.id
+        WHERE ur.user_id = #{userId}
+        <if test="null != available and ''!= available">
+            and r.available = #{available}
+        </if>
+    </select>
+
+
+    <resultMap id="BaseResultExtMap" type="com.yn.electricity.vo.RoleMenuVo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="role_name" property="roleName" jdbcType="VARCHAR"/>
+
+        <collection property="menuList" column="{ipRoleId=ip_role_id, available=us}"
+                    select="com.yn.electricity.mapper.MenuMapper.selectByRoleId">
+
+        </collection>
+        <collection property="roleDeptList" column="ip_role_id" select="com.yn.electricity.mapper.RoleDeptMapper.selectByRoleId">
+
+        </collection>
+    </resultMap>
+    <select id="selectByUserIdExt" resultMap="BaseResultExtMap" >
+        SELECT
+        r.id, r.ip_role_id, r.role_name, null us
+        FROM user_role ur INNER JOIN role r ON ur.role_id=r.id
+        WHERE ur.user_id = #{userId}
+    </select>
+
+    <select id="queryByUserId" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        SELECT
+            r.id, r.ip_role_id, r.role_name
+        FROM user_role ur LEFT JOIN role r ON ur.role_id=r.id
+        WHERE ur.user_id = #{userId}
+          <if test="null != available and ''!= available">
+              and r.available = #{available}
+          </if>
+    </select>
+
+</mapper>

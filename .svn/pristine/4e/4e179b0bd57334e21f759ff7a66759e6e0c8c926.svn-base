@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.CameraMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.CameraDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="dev_id" property="devId" jdbcType="VARCHAR"/>
+        <result column="channel_no" property="channelNo" jdbcType="INTEGER"/>
+        <result column="latitude" property="latitude" jdbcType="DOUBLE"/>
+        <result column="longitude" property="longitude" jdbcType="DOUBLE"/>
+        <result column="is_online" property="isOnline" jdbcType="INTEGER"/>
+        <result column="rtsp_url" property="rtspUrl" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByCameraGroupId" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        SELECT c.id, c.dev_id, c.name, c.channel_no, c.latitude, c.longitude, c.is_online
+        FROM camera_group_camera gc
+                 INNER JOIN camera c ON gc.camera_id = c.id
+        WHERE gc.camera_group_id = #{cameraGroupId}
+    </select>
+
+    <resultMap id="selectCameraByDevIdMap" type="com.yn.electricity.qto.CameraDTO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="dev_id" property="devId" jdbcType="VARCHAR"/>
+        <result column="channel_no" property="channelNo" jdbcType="INTEGER"/>
+        <result column="latitude" property="latitude" jdbcType="DOUBLE"/>
+        <result column="longitude" property="longitude" jdbcType="DOUBLE"/>
+        <result column="is_online" property="isOnline" jdbcType="INTEGER"/>
+        <result column="rtsp_url" property="rtspUrl" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <collection property="isAlarm" column="{cameraId = id}"
+                    select="com.yn.electricity.mapper.AlarmInfoMapper.alarmCount">
+        </collection>
+    </resultMap>
+
+    <select id="selectCameraByDevId" resultMap="selectCameraByDevIdMap">
+        select c.id,
+               c.dev_id,
+               c.name,
+               c.channel_no,
+               c.latitude,
+               c.longitude,
+               c.is_online,
+               c.create_time,
+               c.update_time,
+               c.rtsp_url,
+               (IF((SELECT
+                        count(*)
+                    FROM
+                        alarm_info
+                    WHERE
+                        camera_id = c.id
+                      AND confirm_status = 0) > 0,1,0)) as isAlarm
+        from camera c
+        where dev_id = #{devId}
+    </select>
+
+    <select id="selectByDeviceIdOffline" resultType="java.lang.Integer">
+        SELECT
+            COUNT(`is_online`)
+        FROM
+            `camera`
+        <where>
+            `is_online` = 0
+            <if test="deviceIds != null and deviceIds.size()>0">
+                and dev_id in(
+                <foreach collection="deviceIds" separator="," item="id">
+                    #{id}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByDeviceIdOnline" resultType="java.lang.Integer">
+        SELECT
+        COUNT(`is_online`)
+        FROM
+        `camera`
+        <where>
+            `is_online` = 1
+            <if test="deviceIds != null and deviceIds.size()>0">
+                and dev_id in(
+                <foreach collection="deviceIds" separator="," item="id">
+                    #{id}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByIdOnline" resultType="java.lang.Integer">
+        SELECT
+        COUNT(`is_online`)
+        FROM
+        `camera`
+        <where>
+            `is_online` = 1
+            <if test="cameraIds != null and cameraIds.size()>0">
+                and id in(
+                <foreach collection="cameraIds" separator="," item="id">
+                    #{id}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByIdOffline" resultType="java.lang.Integer">
+        SELECT
+        COUNT(`is_online`)
+        FROM
+        `camera`
+        <where>
+            `is_online` = 0
+            <if test="cameraIds != null and cameraIds.size()>0">
+                and id in(
+                <foreach collection="cameraIds" separator="," item="id">
+                    #{id}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+
+</mapper>

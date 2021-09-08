@@ -1,0 +1,364 @@
+package com.yn.electricity.util.excel;
+
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.event.AnalysisEventListener;
+import com.yn.electricity.dao.*;
+import com.yn.electricity.enums.ServiceEnum;
+import com.yn.electricity.mapper.*;
+import com.yn.electricity.request.DeviceExcelRequest;
+import com.yn.electricity.result.OrganizationResult;
+import com.yn.electricity.result.UserResult;
+import com.yn.electricity.service.DeviceService;
+import com.yn.electricity.service.OrganizationService;
+import com.yn.electricity.service.impl.OrganizationServiceImpl;
+import com.yn.electricity.service.pas.PasDeviceService;
+import com.yn.electricity.util.*;
+import com.yn.electricity.utils.BizBusinessUtils;
+import com.yn.electricity.vo.OrganizationSubordinateVO;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+/**
+ * @author admin
+ * Date 2021/3/18 15:34
+ * Description excel处理回调
+ **/
+@Slf4j
+public class DeviceExcelDataListener extends AnalysisEventListener<DeviceExcelRequest> {
+
+    /**
+     * 每隔3000条存储数据库，然后清理list ，方便内存回收
+     */
+    private static final int BATCH_COUNT = 3000;
+
+    private Map<String, String> nameMap = new HashMap<>();
+    private Map<String, String> codeMap = new HashMap<>();
+    private Map<String, Integer> deviceTypeMap = new HashMap<>();
+    private Map<String, Integer> organizationMap = new HashMap<>();
+    private Map<Integer, Integer> cameraGroupMap = new HashMap<>();
+    private Map<String, Integer> serviceMap = new HashMap<>();
+
+    private final List<DeviceDAO> deviceList = new ArrayList<>();
+
+    private final List<DeviceExcelRequest> excelRequestList = new ArrayList<>();
+    private final PWDUtil pwdUtil = new PWDUtil();
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void invoke(DeviceExcelRequest deviceExcelRequest, AnalysisContext analysisContext) {
+        log.info("#ExcelDataListener.invoke# 解析到一条数据:{}", deviceExcelRequest.toString());
+        excelRequestList.add(deviceExcelRequest);
+        if (excelRequestList.size() >= BATCH_COUNT) {
+            saveDevice();
+            excelRequestList.clear();
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void doAfterAllAnalysed(AnalysisContext analysisContext) {
+        log.info("#ExcelDataListener.invoke# 所有数据解析完成");
+        if (excelRequestList.size() > 0) {
+            saveDevice();
+            destruction();
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void saveDevice() {
+        //判断excelRequestList中是否有重复
+        contains(excelRequestList);
+        List<DeviceDAO> deviceList = new ArrayList<>();
+        //保存到数据库
+        excelRequestList.forEach(new Consumer<DeviceExcelRequest>() {
+            @Override
+            public void accept(DeviceExcelRequest deviceExcelRequest) {
+                ValidationUtils.checkParam(deviceExcelRequest);
+
+                //检测name是否重复
+                String name = deviceExcelRequest.getName();
+                if (!StringUtils.isEmpty(name)) {
+                    if (name.equals(getNameMap(name))) {
+                        BizBusinessUtils.bizBusinessException("设备名称 {} 重复", name);
+                    }
+                }
+                //检测code是否重复
+                String code = deviceExcelRequest.getCode();
+                if (!StringUtils.isEmpty(code)) {
+                    if (code.equals(getCodeMap(code))) {
+                        BizBusinessUtils.bizBusinessException("国标编码 {} 重复", code);
+                    }
+                }
+
+                //检测设备类型是否存在
+                String deviceType = deviceExcelRequest.getDeviceType();
+                Integer deviceTypeId = getDeviceTypeMap(deviceType);
+                if (deviceTypeId == null) {
+                    BizBusinessUtils.bizBusinessException("设备类型 {} 不存在", deviceType);
+                }
+
+                //检测所属组织是否存在
+                String organizationName = deviceExcelRequest.getOrganizationName();
+                //当前账号是否有权限添加这个组织
+                Integer organizationId = getOrganizationName(organizationName);
+                if (organizationId == null) {
+                    BizBusinessUtils.bizBusinessException("所属组织{} 错误 ", organizationName);
+                }
+
+                //检测接入服务id是否存在
+                String serviceName = deviceExcelRequest.getServiceName();
+                Integer serviceId = getServiceMap(serviceName);
+                if (serviceId == null) {
+                    BizBusinessUtils.bizBusinessException("接入服务{} 错误", serviceName);
+                }
+                //设备类型是否和接入服务类型必须 一致
+                ServiceDAO service = getServiceMapper().selectById(serviceId);
+                String vendor = service.getVendor();
+                if (!vendor.equals(deviceType)) {
+                    BizBusinessUtils.bizBusinessException("设备类型{} 和 接入服务类型{} 不一致", deviceType, vendor);
+                }
+
+                DeviceDAO deviceDAO = new DeviceDAO();
+                BeanUtils.copyProperties(deviceExcelRequest, deviceDAO);
+
+                UserResult userResult = getRedisInfoUtil().getUserResult();
+                EntityUtil.setCpyCodeDepCodeIpIdUserId(deviceDAO, userResult);
+
+                //密码加密
+                deviceDAO.setRegisterPassword(pwdUtil.encryptPassword(deviceDAO.getRegisterPassword()));
+
+                deviceDAO.setServiceId(serviceId);
+                deviceDAO.setOrganizationId(organizationId);
+                deviceDAO.setDeviceTypeId(deviceTypeId);
+                deviceDAO.setOnline(0);
+                deviceDAO.setCreateTime(new Date());
+                deviceDAO.setUpdateTime(new Date());
+                deviceList.add(deviceDAO);
+            }
+        });
+
+        DeviceService deviceService = getDeviceService();
+        deviceService.saveBatch(deviceList);
+        log.info("#DeviceExcelDataListener.saveDevice# excel保存 size = {} ", deviceList.size());
+        //同步设备到cms服务
+        getPasDeviceService().sendAddDevicePas(deviceList);
+    }
+
+    public static void main(String[] args) {
+        PWDUtil pwdUtil = new PWDUtil();
+        System.out.println(pwdUtil.encryptPassword("123456"));
+        System.out.println(pwdUtil.decryptPassword("5LgyGQLFYQgzEh2KAuci+w=="));
+    }
+
+    private String getNameMap(String key) {
+        if (nameMap.size() <= 0) {
+            List<DeviceDAO> deviceList = getDeviceList();
+            nameMap = deviceList.stream().collect(Collectors.toMap(DeviceDAO::getName, DeviceDAO::getName));
+        }
+        return nameMap.get(key);
+    }
+
+    private String getCodeMap(String key) {
+        if (codeMap.size() <= 0) {
+            List<DeviceDAO> deviceList = getDeviceList();
+            Map<String, String> map = new HashMap<>();
+            for (DeviceDAO deviceDAO : deviceList) {
+                String code = deviceDAO.getCode();
+                if (!StringUtils.isEmpty(code)) {
+                    map.put(deviceDAO.getCode(), deviceDAO.getCode());
+                }
+            }
+            codeMap = map;
+        }
+        return codeMap.get(key);
+    }
+
+    private Integer getDeviceTypeMap(String key) {
+        if (deviceTypeMap.size() <= 0) {
+            List<DeviceTypeDAO> deviceTypeList = getDeviceTypeDao();
+            deviceTypeMap = deviceTypeList.stream().collect(Collectors.toMap(DeviceTypeDAO::getType, DeviceTypeDAO::getId));
+        }
+        return deviceTypeMap.get(key);
+    }
+
+    private Integer getOrganizationMap(String key) {
+        if (organizationMap.size() <= 0) {
+            List<OrganizationDAO> organizationList = getOrganizationDAO();
+            organizationMap = organizationList.stream().collect(Collectors.toMap(OrganizationDAO::getName, OrganizationDAO::getId));
+        }
+        return organizationMap.get(key);
+    }
+
+    private Integer getCameraGroupMap(Integer key) {
+        if (cameraGroupMap.size() <= 0) {
+            List<CameraGroupDAO> cameraGroupList = getCameraGroupDAO();
+            cameraGroupMap = cameraGroupList.stream().collect(Collectors.toMap(CameraGroupDAO::getId, CameraGroupDAO::getId));
+        }
+        return cameraGroupMap.get(key);
+    }
+
+    private Integer getServiceMap(String key) {
+        if (serviceMap.size() <= 0) {
+            List<ServiceDAO> serviceList = getServiceDAO();
+            serviceMap = serviceList.stream().collect(Collectors.toMap(ServiceDAO::getName, ServiceDAO::getId));
+        }
+        return serviceMap.get(key);
+    }
+
+
+    /**
+     * 当前账号只能添加的组织机构
+     */
+    private final Map<String, Integer> jurisdictionOrganizationMap = new HashMap<>();
+
+    private Integer getOrganizationName(String key) {
+        if (jurisdictionOrganizationMap.size() <= 0) {
+            OrganizationService organizationService = getOrganizationService();
+            OrganizationSubordinateVO subordinateVO = organizationService.organizationSubordinate(1);
+            jurisdictionOrganizationMap.put(subordinateVO.getName(), subordinateVO.getId());
+            List<OrganizationSubordinateVO> childOrganization = subordinateVO.getChildOrganization();
+            getOrganization(childOrganization);
+        }
+        return jurisdictionOrganizationMap.get(key);
+    }
+
+    private void getOrganization(List<OrganizationSubordinateVO> childOrganization) {
+        for (OrganizationSubordinateVO subordinateVO : childOrganization) {
+            jurisdictionOrganizationMap.put(subordinateVO.getName(), subordinateVO.getId());
+            List<OrganizationSubordinateVO> childOrganization1 = subordinateVO.getChildOrganization();
+            if (!CollectionUtils.isEmpty(childOrganization1)) {
+                getOrganization(childOrganization1);
+            }
+        }
+    }
+
+
+    /**
+     * 查询所有的设备
+     *
+     * @return list
+     */
+    private List<DeviceDAO> getDeviceList() {
+        if (deviceList.isEmpty()) {
+            return getDeviceMapper().selectList(null);
+        }
+        return deviceList;
+    }
+
+    /**
+     * 查询所有设备类型
+     *
+     * @return List
+     */
+    private List<DeviceTypeDAO> getDeviceTypeDao() {
+        return getDeviceTypeMapper().selectList(null);
+    }
+
+    /**
+     * 查询所有组织机构
+     *
+     * @return List
+     */
+    private List<OrganizationDAO> getOrganizationDAO() {
+        return getOrganizationMapper().selectList(null);
+    }
+
+    /**
+     * 查询所有镜头组机构
+     *
+     * @return List
+     */
+    private List<CameraGroupDAO> getCameraGroupDAO() {
+        return getCameraGroupMapper().selectList(null);
+    }
+
+    /**
+     * 查询所有接入服务
+     *
+     * @return List
+     */
+    private List<ServiceDAO> getServiceDAO() {
+        return getServiceMapper().selectList(null);
+    }
+
+    /**
+     * 检测是否有重复
+     *
+     * @param deviceList list
+     */
+    private void contains(List<DeviceExcelRequest> deviceList) {
+        Map<String, String> map = new HashMap<>();
+        for (DeviceExcelRequest device : deviceList) {
+            String name = device.getName();
+            if (!Strings.isEmpty(name)){
+                if (map.containsKey(name)) {
+                    BizBusinessUtils.bizBusinessException("excel中设备 {} 名称重复", name);
+                } else {
+                    map.put(name, name);
+                }
+            }
+            String code = device.getCode();
+            if (!Strings.isEmpty(code)){
+                if (map.containsKey(code)) {
+                    BizBusinessUtils.bizBusinessException("excel中国标编码 {} 重复", code);
+                } else {
+                    map.put(code, code);
+                }
+            }
+        }
+    }
+
+
+    private void destruction() {
+        nameMap.clear();
+        codeMap.clear();
+        organizationMap.clear();
+        cameraGroupMap.clear();
+        excelRequestList.clear();
+        deviceList.clear();
+    }
+
+    private DeviceMapper getDeviceMapper() {
+        return SpringUtils.getBean(DeviceMapper.class);
+    }
+
+    private DeviceTypeMapper getDeviceTypeMapper() {
+        return SpringUtils.getBean(DeviceTypeMapper.class);
+    }
+
+    private OrganizationMapper getOrganizationMapper() {
+        return SpringUtils.getBean(OrganizationMapper.class);
+    }
+
+    private CameraGroupMapper getCameraGroupMapper() {
+        return SpringUtils.getBean(CameraGroupMapper.class);
+    }
+
+    private ServiceMapper getServiceMapper() {
+        return SpringUtils.getBean(ServiceMapper.class);
+    }
+
+    private RedisInfoUtil getRedisInfoUtil() {
+        return SpringUtils.getBean(RedisInfoUtil.class);
+    }
+
+    private DeviceService getDeviceService() {
+        return SpringUtils.getBean(DeviceService.class);
+    }
+
+    private PasDeviceService getPasDeviceService() {
+        return SpringUtils.getBean(PasDeviceService.class);
+    }
+
+    private OrganizationService getOrganizationService() {
+        return SpringUtils.getBean(OrganizationService.class);
+    }
+}

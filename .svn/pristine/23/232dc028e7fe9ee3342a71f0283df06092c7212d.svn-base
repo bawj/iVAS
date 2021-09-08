@@ -1,0 +1,16 @@
+package com.yn.electricity.controller.alarm;
+
+import io.swagger.annotations.Api;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * @author admin
+ * Date 2021/5/20 17:52
+ * Description 报警管理
+ **/
+@Api(tags = "报警管理")
+@RestController
+public class AlarmManagerController {
+
+
+}

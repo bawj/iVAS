@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.ServiceMapper">
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.ServiceDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="service_id" property="serviceId" jdbcType="VARCHAR"/>
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+        <result column="ip" property="ip" jdbcType="VARCHAR"/>
+        <result column="port" property="port" jdbcType="INTEGER"/>
+        <result column="vendor" property="vendor" jdbcType="VARCHAR"/>
+        <result column="payload" property="payload" jdbcType="DOUBLE"/>
+        <result column="ability" property="ability" jdbcType="INTEGER"/>
+        <result column="alg_type" property="algType" jdbcType="VARCHAR"/>
+        <result column="online" property="online" jdbcType="SMALLINT"/>
+        <result column="create_Time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <select id="selectByOnlineAndVendor" resultType="com.yn.electricity.dao.ServiceDAO">
+        select *
+        from service
+        <where>
+            <if test="deviceType != null and deviceType != ''">
+                and vendor = #{deviceType}
+            </if>
+        </where>
+        order by create_Time desc
+    </select>
+</mapper>

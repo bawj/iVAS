@@ -1,0 +1,10 @@
+package com.yn.electricity.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yn.electricity.dao.AlarmInfoDAO;
+
+/**
+ * @author 报警信息处理
+ */
+public interface AlarmInfoMapper extends BaseMapper<AlarmInfoDAO> {
+}

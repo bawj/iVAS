@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.AlarmInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.AlarmInfoDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="dev_Id" property="devId" jdbcType="INTEGER"/>
+        <result column="channel_no" property="channelNo" jdbcType="INTEGER"/>
+        <result column="organization_id" property="organizationId" jdbcType="INTEGER"/>
+        <result column="alarm_time" property="alarmTime" jdbcType="TIMESTAMP"/>
+        <result column="alarm_grade" property="alarmGrade" jdbcType="INTEGER"/>
+        <result column="alarm_configuration_type_id" property="alarmConfigurationTypeId" jdbcType="INTEGER"/>
+        <result column="alarm_snapshot_url" property="alarmSnapshotUrl" jdbcType="VARCHAR"/>
+        <result column="alarm_content" property="alarmContent" jdbcType="VARCHAR"/>
+        <result column="confirm_status" property="confirmStatus" jdbcType="BIT"/>
+        <result column="confirm_people" property="confirmPeople" jdbcType="VARCHAR"/>
+        <result column="confirm_time" property="confirmTime" jdbcType="TIMESTAMP"/>
+        <result column="remarks" property="remarks" jdbcType="LONGVARCHAR"/>
+    </resultMap>
+
+</mapper>

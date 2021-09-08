@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yn.electricity.mapper.AlarmConfigurationMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.AlarmConfigurationDAO">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="alarm_configuration_type_id" jdbcType="INTEGER" property="alarmConfigurationTypeId"/>
+        <result column="distribution_time" jdbcType="VARCHAR" property="distributionTime"/>
+        <result column="alarm_grade" jdbcType="INTEGER" property="alarmGrade"/>
+        <result column="remarks" jdbcType="VARCHAR" property="remarks"/>
+        <result column="enable" jdbcType="BIT" property="enable"/>
+        <result column="company_code" property="companyCode" jdbcType="VARCHAR"/>
+        <result column="department_code" property="departmentCode" jdbcType="VARCHAR"/>
+        <result column="user_ip_id" property="userIpId" jdbcType="VARCHAR"/>
+        <result column="update_user_id" property="updateUserId" jdbcType="INTEGER"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+    </resultMap>
+
+
+    <select id="findConfiguration" resultType="com.yn.electricity.vo.AlarmConfigurationVO">
+        SELECT
+        ac.id,
+        ac.`name`,
+        act.type_name AS configurationTypeName,-- 配置类型
+        GROUP_CONCAT( art.type_name ) AS responseName,-- 响应类型名称
+        ac.alarm_grade AS alarmGrade,
+        ac.distribution_time AS distributionTime,
+        ( SELECT COUNT( id ) FROM ac_organization acoc WHERE acoc.alarm_configuration_id = ac.id ) AS resourcesNumber,
+        ac.`enable`,
+        ac.remarks
+        FROM
+        alarm_configuration ac
+        LEFT JOIN alarm_configuration_type act ON act.id = ac.alarm_configuration_type_id
+        LEFT JOIN art_ac ON ac.id = art_ac.alarm_configuration_id
+        LEFT JOIN alarm_response_type art ON art_ac.alarm_response_type_id = art.id
+        <where>
+            <if test="name != null and name != ''">
+                ac.`name` LIKE CONCAT( '%', #{name}, '%' )
+            </if>
+            <if test="alarmConfigurationTypeId != null">
+                AND act.id = #{alarmConfigurationTypeId}
+            </if>
+            <if test="responseTypeId != null">
+                AND art.id = #{responseTypeId}
+            </if>
+            <if test="alarmGrade != null">
+                AND ac.alarm_grade = #{alarmGrade}
+            </if>
+            <if test="enable != null">
+                AND ac.`enable` = #{enable}
+            </if>
+            <if test="null != depCodeList and depCodeList.size > 0">
+                and ac.department_code in(
+                <foreach collection="depCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="null != companyCodeList and companyCodeList.size > 0">
+                and ac.company_code in(
+                <foreach collection="companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+        GROUP BY
+        ac.id
+    </select>
+
+
+    <select id="selectBatchIdsAndAlarmType" resultMap="BaseResultMap">
+        select id,
+        name,
+        alarm_configuration_type_id,
+        distribution_time,
+        alarm_grade,
+        remarks,
+        enable,
+        department_code,
+        company_code,
+        user_ip_id,
+        update_user_id,
+        create_time,
+        update_time
+        from alarm_configuration
+        <where>
+            <if test="alarmConfigurationIds != null and alarmConfigurationIds.size() > 0">
+                and id IN (
+                <foreach collection="alarmConfigurationIds" item="ids" separator=",">
+                    #{ids}
+                </foreach>
+                )
+            </if>
+            <if test="alarmTypeId != null">
+                and alarm_configuration_type_id = #{alarmTypeId}
+            </if>
+        </where>
+    </select>
+
+    <resultMap id="alarmConfigurationMap" type="com.yn.electricity.entity.AlarmConfigurationEntity">
+        <result column="alarm_configuration_type_id" property="alarmConfigurationTypeId" javaType="java.lang.Integer"/>
+        <result column="distribution_time" property="distributionTime" javaType="java.lang.String"/>
+        <result column="alarm_grade" property="alarmGrade" javaType="java.lang.Integer"/>
+        <result column="organization_id" property="organizationId" javaType="java.lang.Integer"/>
+        <result column="name" property="cameraName" javaType="java.lang.String"/>
+        <result column="organizationName" property="organizationName" javaType="java.lang.String"/>
+        <result column="cameraId" property="cameraId" javaType="java.lang.Integer"/>
+        <collection property="responseTypes" ofType="com.yn.electricity.vo.ResponseTypeVO" javaType="java.util.List"
+                    column="id" select="com.yn.electricity.mapper.ArtAcMapper.findArtAcByAlarmConfigurationId"/>
+    </resultMap>
+
+    <select id="findConfigurationByDevIdAndAlarmTypeId" resultMap="alarmConfigurationMap">
+        SELECT
+            o.id as organizationId, -- 所属组织id
+            o.name as organizationName,
+            ac.alarm_configuration_type_id, -- 报警配置类型id
+            aco.organization_id,
+            ac.alarm_configuration_type_id,
+            ac.distribution_time,
+            ac.alarm_grade ,
+            c.`name`,
+            c.id as cameraId
+        FROM
+            device d
+                LEFT JOIN organization o ON d.organization_id = o.id
+                LEFT JOIN ac_organization aco ON aco.organization_id = o.id
+                LEFT JOIN alarm_configuration ac ON aco.alarm_configuration_id = ac.id
+                LEFT JOIN camera c ON c.dev_id = d.id
+        WHERE
+            c.dev_id = #{devId}
+          AND c.channel_no = #{channelNo}
+          AND ac.alarm_configuration_type_id = #{alarmTypeId}
+          AND ac.`enable` = TRUE
+    </select>
+
+</mapper>

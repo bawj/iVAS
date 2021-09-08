@@ -1,0 +1,68 @@
+package com.yn.electricity.service.pas;
+
+import com.yn.electricity.ResultUtilVO;
+import com.yn.electricity.ResultVO;
+import com.yn.electricity.pas.AddDeviceRequest;
+import com.yn.electricity.pas.DeleteDeviceRequest;
+import com.yn.electricity.pas.PasBaseRequest;
+import com.yn.electricity.service.pas.impl.PasDeviceServiceFeignClientImpl;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+
+/**
+ * @author openFeign 请求 pas 设备相关
+ */
+@Component
+@FeignClient(value = "ynivpas-manager", contextId = "pasDeviceService" , fallback = PasDeviceServiceFeignClientImpl.class)
+public interface PasDeviceServiceFeignClient {
+
+    /**
+     * 增加多个设备
+     * @param pasBaseRequest pasBaseRequest
+     * @return ResultVO
+     */
+    @PostMapping("/save_device")
+    ResultVO<String> saveEquipment(@RequestBody PasBaseRequest<List<AddDeviceRequest>> pasBaseRequest);
+
+
+    /**
+     * 删除多个设备
+     * @param deviceList deviceList
+     * @return ResultVO
+     */
+    @PostMapping("/del_device")
+    ResultVO<String> delDevice(@RequestBody PasBaseRequest<List<DeleteDeviceRequest>> deviceList);
+
+
+    /**
+     * 发送继电器输出指令
+     * @param devId 设备id
+     * @param channelNo 通道号
+     * @return string
+     */
+    @PostMapping("/instruction/relay")
+    ResultVO<String> instructionRelay(String devId , Integer channelNo);
+
+    /**
+     * 发送镜头抓图指令
+     * @param devId 设备id
+     * @param channelNo 通道号
+     * @return string
+     */
+    @PostMapping("/instruction/capture")
+    ResultVO<String> instructionCapture(String devId , Integer channelNo);
+
+    /**
+     * 发送镜头录像指令
+     * @param devId 设备id
+     * @param channelNo 通道号
+     * @return string
+     */
+    @PostMapping("/instruction/videotape")
+    ResultVO<String> instructionVideotape(String devId , Integer channelNo);
+
+}

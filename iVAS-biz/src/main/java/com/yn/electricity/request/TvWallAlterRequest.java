@@ -1,0 +1,40 @@
+package com.yn.electricity.request;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
+/**
+ * @author admin
+ * Date 2021/3/22 9:33
+ * Description
+ **/
+@Data
+@ApiModel(value = "电视墙配置修改信息")
+public class TvWallAlterRequest {
+
+    @NotNull(message = "id 不能为空")
+    private Integer id;
+
+    @ApiModelProperty(value = "配置名称")
+    @NotEmpty(message = "配置名称不能为空")
+    private String name;
+
+    @ApiModelProperty(value = "轮询时间")
+    @NotNull(message = "轮询时间不能为空")
+    private Integer pollTime;
+
+    @ApiModelProperty(value = "是否禁用 1启用 0禁用")
+    @NotNull(message = "请选择是否启动")
+    private Boolean status;
+
+    @ApiModelProperty(value = "备注说明")
+    private String remarks;
+
+    @ApiModelProperty(value = "窗口分割 例 9窗口存储 9")
+    @NotNull(message = "请选择窗口分割")
+    private String windowDivision;
+}

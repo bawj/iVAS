@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.UserMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.vo.UserVo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="ip_id" property="ipId" jdbcType="VARCHAR"/>
+        <result column="nickname" property="nickname" jdbcType="VARCHAR"/>
+        <result column="user_name" property="userName" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="app_id" property="appId" jdbcType="INTEGER"/>
+        <result column="available" property="available" jdbcType="VARCHAR"/>
+        <result column="lock_status" property="lockStatus" jdbcType="VARCHAR"/>
+        <result column="salt" property="salt" jdbcType="VARCHAR"/>
+        <result column="parent_ip_id" property="parentIpId" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="modify_time" property="modifyTime" jdbcType="TIMESTAMP"/>
+        <result column="is_delete" property="isDelete" jdbcType="VARCHAR"/>
+        <result column="dep_name" property="depName" jdbcType="VARCHAR"/>
+        <result column="dep_code" property="depCode" jdbcType="VARCHAR"/>
+        <result column="dep_parent_code" property="depParentCode" jdbcType="VARCHAR"/>
+        <result column="sex" property="sex" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="e_mail" property="eMail" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+
+        <collection property="roleIdList" column="id"  select="com.yn.electricity.mapper.UserRoleMapper.selectByUserId">
+
+        </collection>
+    </resultMap>
+
+    <select id="selectByPage" resultMap="BaseResultMap" parameterType="com.yn.electricity.qto.BaseQuery">
+        SELECT
+            u.id, u.ip_id, u.nickname, u.user_name, u.`password`, u.app_id, u.available,
+            u.lock_status, u.salt, u.parent_ip_id, dep.`name` dep_name, dep.`code` dep_code, dep.parent_code dep_parent_code,
+            u.sex, u.phone, u.e_mail, u.create_time
+        FROM `user` u
+        LEFT JOIN department dep ON u.dep_code=dep.`code`
+        <where>
+            is_delete='n'
+            <if test="null != query.depCodeList and query.depCodeList.size > 0">
+                and u.dep_code in(
+                    <foreach collection="query.depCodeList" index="ind" item="it" separator=",">
+                        #{it}
+                    </foreach>
+                )
+            </if>
+            <if test="null != query.companyCodeList and query.companyCodeList.size > 0">
+                and u.company_code in(
+                <foreach collection="query.companyCodeList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+            <if test="query.userName != null and '' != query.userName">
+                and u.user_name like CONCAT('%',#{query.userName},'%')
+            </if>
+            <if test="query.nickName != null and '' != query.nickName">
+                and u.nickname like CONCAT('%',#{query.nickName},'%')
+            </if>
+            <if test="query.phone != null and '' != query.phone">
+                and u.phone = #{query.phone}
+            </if>
+            <if test="query.startTime != null and query.startTime != '' and query.endTime != null and query.endTime != ''">
+                AND u.create_time BETWEEN #{query.startTime} AND #{query.endTime}
+            </if>
+            <if test="null != idList and idList.size > 0">
+                and u.id in(
+                <foreach collection="idList" index="ind" item="it" separator=",">
+                    #{it}
+                </foreach>
+                )
+            </if>
+        </where>
+        ORDER BY u.create_time asc
+    </select>
+
+    <resultMap id="BaseUserNameResultMap" type="com.yn.electricity.vo.UserRoleMenuVo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="nickname" property="nickname" jdbcType="VARCHAR"/>
+        <result column="user_name" property="userName" jdbcType="VARCHAR"/>
+        <result column="sex" property="sex" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="e_mail" property="eMail" jdbcType="VARCHAR"/>
+        <result column="e_mail_password" property="eMailPassword" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="company_code" property="companyCode" jdbcType="VARCHAR"/>
+        <result column="ip_id" property="ipId" jdbcType="VARCHAR"/>
+        <result column="dep_code" property="depCode" jdbcType="VARCHAR"/>
+        <result column="app_id" property="appId" jdbcType="INTEGER"/>
+        <result column="available" property="available" jdbcType="VARCHAR"/>
+        <result column="lock_status" property="lockStatus" jdbcType="VARCHAR"/>
+        <result column="salt" property="salt" jdbcType="VARCHAR"/>
+        <result column="parent_ip_id" property="parentIpId" jdbcType="VARCHAR"/>
+
+        <collection property="roleMenuVoList" column="{userId=id, available=a}" select="com.yn.electricity.mapper.RoleMapper.selectByUserId">
+
+        </collection>
+    </resultMap>
+    <select id="selectByLoginName" resultMap="BaseUserNameResultMap" parameterType="com.yn.electricity.qto.BaseQuery">
+        SELECT
+            id, nickname, user_name, sex, phone, e_mail, e_mail_password, `password`, company_code, ip_id, dep_code, app_id, available,
+        lock_status, salt, parent_ip_id, #{available} a
+        FROM `user`
+        <where>
+            <if test="null != phone and '' != phone">
+                and phone = #{phone}
+            </if>
+            <if test="null != eMail and '' != eMail">
+                and e_mail = #{eMail}
+            </if>
+            and is_delete='n'
+        </where>
+    </select>
+
+    <update id="updateBatchIds" parameterType="java.util.List">
+        UPDATE
+            `user`
+        SET is_delete='y'
+        WHERE id IN(
+            <foreach collection="list" index="ind" item="it" separator=",">
+                #{it}
+            </foreach>
+            )
+    </update>
+    <!-- 查询部门下是否存在用户 -->
+    <select id="selectByDepCode" resultType="java.lang.Integer" parameterType="java.util.List">
+        SELECT
+               COUNT(1)
+        FROM `user`
+        WHERE dep_code
+                  in(SELECT `code` FROM department WHERE id in(
+                      <foreach collection="list" index="ind" item="it" separator=",">
+                          #{it}
+                      </foreach>
+                ))
+    </select>
+
+</mapper>

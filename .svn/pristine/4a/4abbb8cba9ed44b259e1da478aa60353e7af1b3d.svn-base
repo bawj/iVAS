@@ -1,0 +1,253 @@
+package com.yn.electricity.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.google.common.collect.Maps;
+import com.yn.electricity.dao.CameraGroupDAO;
+import com.yn.electricity.dao.OrganizationDAO;
+import com.yn.electricity.dao.TvWallDAO;
+import com.yn.electricity.dao.TvWallOrganizationCameraGroupDAO;
+import com.yn.electricity.enums.DeviceEnum;
+import com.yn.electricity.mapper.CameraGroupMapper;
+import com.yn.electricity.mapper.OrganizationMapper;
+import com.yn.electricity.mapper.TvWallMapper;
+import com.yn.electricity.mapper.TvWallOrganizationCameraGroupMapper;
+import com.yn.electricity.qto.BaseQuery;
+import com.yn.electricity.request.TvWallAlterRequest;
+import com.yn.electricity.request.TvWallSaveRequest;
+import com.yn.electricity.result.UserResult;
+import com.yn.electricity.service.TvWallOgCgService;
+import com.yn.electricity.service.TvWallService;
+import com.yn.electricity.util.DataPermissionUtil;
+import com.yn.electricity.util.EntityUtil;
+import com.yn.electricity.util.RedisInfoUtil;
+import com.yn.electricity.utils.BizBusinessUtils;
+import com.yn.electricity.utils.ListUtil;
+import com.yn.electricity.vo.TvWallResource;
+import com.yn.electricity.vo.TvWallVO;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import javax.annotation.Resource;
+import java.util.*;
+
+/**
+ * @author admin
+ * Date 2021/3/20 10:44
+ * Description 电视墙管理
+ **/
+@Service
+public class TvWallServiceImpl implements TvWallService {
+
+    @Resource
+    private RedisInfoUtil redisInfoUtil;
+    @Resource
+    private TvWallMapper tvWallMapper;
+    @Resource
+    private OrganizationMapper organizationMapper;
+    @Resource
+    private CameraGroupMapper cameraGroupMapper;
+    @Resource
+    private TvWallOrganizationCameraGroupMapper allMapper;
+    @Resource
+    private TvWallOgCgService ogCgService;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String addTvWall(TvWallSaveRequest tvWallSaveRequest) {
+        String name = tvWallSaveRequest.getName();
+
+        HashMap<String, Object> tvWallMap = Maps.newHashMap();
+        tvWallMap.put("name", name);
+        List<TvWallDAO> tvWallList = tvWallMapper.selectByMap(tvWallMap);
+        if (!CollectionUtils.isEmpty(tvWallList)) {
+            BizBusinessUtils.bizBusinessException("配置名称重复");
+        }
+        List<Integer> resourcesIds = tvWallSaveRequest.getResourcesIds();
+        Integer resourcesSource = tvWallSaveRequest.getResourcesSource();
+        isErrorResource(resourcesIds, resourcesSource);
+
+        TvWallDAO tvWall = new TvWallDAO();
+        BeanUtils.copyProperties(tvWallSaveRequest, tvWall);
+
+        UserResult userResult = redisInfoUtil.getUserResult();
+        EntityUtil.setCpyCodeDepCodeIpIdUserId(tvWall, userResult);
+
+        tvWall.setCreateTime(new Date());
+        tvWall.setUpdateTime(new Date());
+
+        tvWallMapper.insert(tvWall);
+        //保存
+        saveTvWallOgCg(tvWall.getId() , resourcesIds , resourcesSource);
+
+        // TODO: 2021/3/20 电视墙提交给pas
+        return null;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String alterTvWall(TvWallAlterRequest tvWallAlterRequest) {
+        Integer id = tvWallAlterRequest.getId();
+        TvWallDAO tvWallDAO = tvWallMapper.selectById(id);
+        if (tvWallDAO == null) {
+            BizBusinessUtils.bizBusinessException("id 错误");
+        }
+        String name = tvWallAlterRequest.getName();
+        TvWallDAO tvWall = tvWallMapper.selectByNameNotId(id, name);
+        if (tvWall != null) {
+            BizBusinessUtils.bizBusinessException("配置名称重复");
+        }
+        List<Integer> resourcesIds = tvWallAlterRequest.getResourcesIds();
+        Integer resourcesSource = tvWallAlterRequest.getResourcesSource();
+        isErrorResource(resourcesIds, resourcesSource);
+
+        tvWall = new TvWallDAO();
+        BeanUtils.copyProperties(tvWallAlterRequest, tvWall);
+
+        UserResult userResult = redisInfoUtil.getUserResult();
+        EntityUtil.setCpyCodeDepCodeIpIdUserId(tvWall, userResult);
+
+        tvWall.setCreateTime(new Date());
+        tvWall.setUpdateTime(new Date());
+
+        tvWallMapper.updateById(tvWall);
+
+        //先删除在添加
+        List<Integer> tvWallIds = Arrays.asList(new Integer[]{tvWall.getId()}.clone());
+        delTvWallOgCg(tvWallIds);
+
+        saveTvWallOgCg(tvWall.getId() , resourcesIds , resourcesSource);
+
+        // TODO: 2021/3/22 电视墙提交给pas
+        return null;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer deleteTvWall(List<Integer> ids) {
+        if (ids == null) {
+            BizBusinessUtils.bizBusinessException("id 错误");
+        }
+        tvWallMapper.deleteBatchIds(ids);
+
+        //批量删除 删除中间表 tv_wall_organization_cameraGroup
+        delTvWallOgCg(ids);
+
+        // TODO: 2021/3/22 电视墙提交给pas
+
+        return null;
+    }
+
+    @Resource
+    private DataPermissionUtil dataPermissionUtil;
+
+    @Override
+    public PageInfo<TvWallVO> findTvWall(Integer pageNum, Integer pageSize, String name, Boolean status) {
+        PageHelper.startPage(pageNum , pageSize);
+        BaseQuery dataPermission = dataPermissionUtil.getDataPermission();
+        List<TvWallVO> tvWallList = tvWallMapper.selectByNameAndStatus(dataPermission, name , status);
+        return new PageInfo<>(ListUtil.newArrayList(tvWallList));
+    }
+
+    @Override
+    public List<TvWallResource> findTvWallSources(Integer id) {
+        if (id == null){
+            BizBusinessUtils.bizBusinessException("id 错误");
+        }
+        TvWallDAO tvWallDAO = tvWallMapper.selectById(id);
+        Integer resourcesSource = tvWallDAO.getResourcesSource();
+        if (resourcesSource.equals(DeviceEnum.TV_WALL_RESOURCE_ORGANIZATION.getStatus())) {
+            //关联组织机构
+            return ListUtil.newArrayList(tvWallMapper.selectOrganizationTvWallOgCgById(id));
+        } else if (resourcesSource.equals(DeviceEnum.TV_WALL_RESOURCE_CAMERA_GROUP.getStatus())) {
+            //关联镜头组
+            return ListUtil.newArrayList(tvWallMapper.selectCameraGroupTvWallOgCgById(id));
+        } else {
+            BizBusinessUtils.bizBusinessException("resourcesSource 错误");
+        }
+        return new ArrayList<>();
+    }
+
+    @Resource
+    private TvWallOrganizationCameraGroupMapper tvMapper;
+
+
+    @Override
+    public Integer deleteList(Integer resourcesSource, List<Integer>  resourcesIds) {
+        //删除电视墙配置相关的字段 tv_wall_organization_cameraGroup tv_wall
+        QueryWrapper<TvWallOrganizationCameraGroupDAO> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("resources_source" , resourcesSource);
+        queryWrapper.in("resources_id" , resourcesIds);
+        List<TvWallOrganizationCameraGroupDAO> tvList = tvMapper.selectList(queryWrapper);
+        if (!CollectionUtils.isEmpty(tvList)){
+            tvList.forEach(tvWallOgCgDao -> {
+                Integer id = tvWallOgCgDao.getId();
+                //删除 tv_wall_organization_cameraGroup
+                tvMapper.deleteById(id);
+
+                //查询是否有其它镜头组关联了当前配置
+                Integer tvWallId = tvWallOgCgDao.getTvWallId();
+                HashMap<String, Object> tvMaps = Maps.newHashMap();
+                tvMaps.put("tv_wall_id" , tvWallId);
+                List<TvWallOrganizationCameraGroupDAO> tvOgCgList = tvMapper.selectByMap(tvMaps);
+                if (CollectionUtils.isEmpty(tvOgCgList)){
+                    //删除 tv_wall
+                    tvWallMapper.deleteById(tvWallId);
+                }
+            });
+        }
+        return null;
+    }
+
+
+    /**
+     * 判断关联的资源id 是否正确
+     *
+     * @param resourcesId     资源id
+     * @param resourcesSource id来源
+     */
+    private void isErrorResource(List<Integer> resourcesId, Integer resourcesSource) {
+        if (resourcesSource.equals(DeviceEnum.TV_WALL_RESOURCE_ORGANIZATION.getStatus())) {
+            //关联组织机构
+            List<OrganizationDAO> organizationDAOList = organizationMapper.selectListById(resourcesId);
+            if (CollectionUtils.isEmpty(organizationDAOList) || organizationDAOList.size() != resourcesId.size()) {
+                BizBusinessUtils.bizBusinessException("资源id 错误");
+            }
+        } else if (resourcesSource.equals(DeviceEnum.TV_WALL_RESOURCE_CAMERA_GROUP.getStatus())) {
+            //关联镜头组
+            List<CameraGroupDAO> groupList = cameraGroupMapper.selectListById(resourcesId);
+            if (CollectionUtils.isEmpty(groupList) || groupList.size() != resourcesId.size()) {
+                BizBusinessUtils.bizBusinessException("资源id 错误");
+            }
+        } else {
+            BizBusinessUtils.bizBusinessException("resourcesSource 错误");
+        }
+    }
+
+    /**
+     * 保存到中间表
+     * @param ids ids
+     * @param resourceSource 来源 1代表关联组织机构 2代表关联镜头组
+     */
+    private void saveTvWallOgCg(Integer tvWallId,List<Integer> ids, Integer resourceSource){
+        List<TvWallOrganizationCameraGroupDAO> tvAllOgCgList = new ArrayList<>();
+        ids.forEach(resourceId -> {
+            TvWallOrganizationCameraGroupDAO tvAllOgCg = new TvWallOrganizationCameraGroupDAO();
+            tvAllOgCg.setTvWallId(tvWallId);
+            tvAllOgCg.setResourcesId(resourceId);
+            tvAllOgCg.setResourcesSource(resourceSource);
+            tvAllOgCg.setCreateTime(new Date());
+            tvAllOgCg.setUpdateTime(new Date());
+            tvAllOgCgList.add(tvAllOgCg);
+        });
+        ogCgService.saveBatch(tvAllOgCgList);
+    }
+
+    private void delTvWallOgCg(List<Integer> tvWallIds){
+        allMapper.deleteByTvWallIds(tvWallIds);
+    }
+
+}

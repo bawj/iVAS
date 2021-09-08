@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.CameraGroupMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.CameraGroupDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="sport" property="sport" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <select id="selectByNameNotId" resultMap="BaseResultMap">
+        select *
+        from camera_group
+        where name = #{name}
+          and id != #{id}
+    </select>
+
+    <delete id="deleteByIdList" parameterType="java.util.List">
+        delete
+        from camera_group
+        where id in (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
+    </delete>
+
+    <select id="selectListById" resultType="com.yn.electricity.dao.CameraGroupDAO">
+        select * from camera_group
+        where id in (
+        <foreach collection="ids" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
+    </select>
+
+
+    <resultMap id="BaseExtResultMap" type="com.yn.electricity.vo.CameraGroupResultVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="queryAllGroupByIpId" resultMap="BaseExtResultMap" parameterType="com.yn.electricity.qto.BaseQuery">
+        select id, name from camera_group
+        <where>
+            user_ip_id = #{ipId}
+        </where>
+        order by camera_group_id
+        limit 0,1
+    </select>
+
+    <select id="selectByCameraGroupId" resultType="com.yn.electricity.vo.CameraGroupResultVO">
+        select *
+        from camera_group
+        where camera_group_id = #{cameraGroupId}
+          and user_ip_id = #{ipId}
+    </select>
+</mapper>

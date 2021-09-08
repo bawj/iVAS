@@ -1,0 +1,21 @@
+package com.yn.electricity.mapper;
+
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yn.electricity.dao.TvWallOrganizationCameraGroupDAO;
+
+import java.util.List;
+
+/**
+ * @author 电视墙配置 关联组织机构和镜头组 中间表
+ */
+public interface TvWallOrganizationCameraGroupMapper extends BaseMapper<TvWallOrganizationCameraGroupDAO> {
+
+    /**
+     * 根据 tvWallId 批量删除
+     * @param ids tvWallIds
+     * @return Integer
+     */
+    Integer deleteByTvWallIds(List<Integer> ids);
+
+}

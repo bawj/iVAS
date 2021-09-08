@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yn.electricity.mapper.AcOrganizationMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.AcOrganizationDAO">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="alarm_configuration_id" jdbcType="INTEGER" property="alarmConfigurationId"/>
+        <result column="organization_id" jdbcType="INTEGER" property="organizationId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+
+    <insert id="insertList" parameterType="java.util.List">
+        insert into ac_organization
+        (
+        alarm_configuration_id,
+        organization_id,
+        create_time
+        )
+        values
+        <foreach collection="acList" item="ac" separator=",">
+            (
+            #{ac.alarmConfigurationId},
+            #{ac.organizationId},
+            #{ac.createTime}
+            )
+        </foreach>
+    </insert>
+    <select id="updateRepeatConfigurationType" resultType="com.yn.electricity.entity.RepeatConfigurationTypeEntity">
+        SELECT
+        aco.alarm_configuration_id as alarmConfigurationId,
+        aco.organization_id as organizationId,
+        ac.alarm_configuration_type_id as alarmConfigurationTypeId,
+        act.type_name as typeName,
+        o.`name` as name
+        FROM
+        ac_organization aco
+        LEFT JOIN alarm_configuration ac ON aco.alarm_configuration_id = ac.id
+        LEFT JOIN alarm_configuration_type act ON ac.alarm_configuration_type_id = act.id
+        LEFT JOIN organization o ON o.id = aco.organization_id
+        <where>
+            aco.organization_id IN (
+            <foreach collection="organizationIds" item="ids" separator=",">
+                #{ids}
+            </foreach>
+            )
+            and ac.alarm_configuration_type_id = #{configurationTypeId}
+            AND aco.alarm_configuration_id != #{id}
+        </where>
+    </select>
+
+    <select id="repeatConfigurationType" resultType="com.yn.electricity.entity.RepeatConfigurationTypeEntity">
+        SELECT
+        aco.alarm_configuration_id as alarmConfigurationId,
+        aco.organization_id as organizationId,
+        ac.alarm_configuration_type_id as alarmConfigurationTypeId,
+        act.type_name as typeName,
+        o.`name` as name
+        FROM
+        ac_organization aco
+        LEFT JOIN alarm_configuration ac ON aco.alarm_configuration_id = ac.id
+        LEFT JOIN alarm_configuration_type act ON ac.alarm_configuration_type_id = act.id
+        LEFT JOIN organization o ON o.id = aco.organization_id
+        <where>
+            aco.organization_id IN (
+            <foreach collection="organizationIds" item="ids" separator=",">
+                #{ids}
+            </foreach>
+            )
+            and ac.alarm_configuration_type_id = #{configurationTypeId}
+        </where>
+    </select>
+
+    <select id="findAcOrganizationByConfigurationId" resultType="com.yn.electricity.vo.AcOrganizationVO">
+        select o.id as organizationId,
+               o.name as organizationName
+        from ac_organization ao
+                 left join organization o on ao.organization_id = o.id
+        where alarm_configuration_id = #{configurationId}
+    </select>
+
+</mapper>

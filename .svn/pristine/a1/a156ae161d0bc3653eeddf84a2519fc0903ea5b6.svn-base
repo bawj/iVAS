@@ -1,0 +1,129 @@
+package com.yn.electricity.util;
+
+import com.yn.electricity.dao.Department;
+import com.yn.electricity.dao.RoleDept;
+import com.yn.electricity.enums.DataPermissonTypeEnum;
+import com.yn.electricity.mapper.DepartmentMapper;
+import com.yn.electricity.mapper.RoleMapper;
+import com.yn.electricity.qto.BaseQuery;
+import com.yn.electricity.result.UserResult;
+import com.yn.electricity.utils.BizBusinessUtils;
+import com.yn.electricity.vo.RoleMenuVo;
+import org.apache.shiro.SecurityUtils;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
+import javax.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * @ClassName: DataPermissionUtil
+ * @Author: zzs
+ * @Date: 2021/3/24 9:31
+ * @Description: 获取数据权限条件条件
+ */
+@Component
+public class DataPermissionUtil {
+    @Resource
+    private RedisInfoUtil redisInfoUtil;
+    @Resource
+    private RoleMapper roleMapper;
+    @Resource
+    private DepartmentMapper departmentMapper;
+
+    /**
+     * 获取数据权限
+     */
+    public BaseQuery getDataPermission(){
+        BaseQuery query = new BaseQuery();
+
+        // admin 用户有所有权限
+        Object principal = SecurityUtils.getSubject().getPrincipal();
+        if("admin".equals(principal)){
+            return query;
+        }
+
+        // 存放数据权限
+        List<RoleDept> deptList = new ArrayList<>();
+
+        // 先获取当前用户
+        UserResult userResult = redisInfoUtil.getUserResult();
+        // 根据角色下的数据权限
+        List<RoleMenuVo> roleMenuVos = redisInfoUtil.getPermission();
+        roleMenuVos.forEach(r -> deptList.addAll(r.getRoleDeptList()));
+
+        // 如缓存中不存在 就查数据库
+        if(CollectionUtils.isEmpty(deptList)){
+            List<RoleMenuVo> roleMenuVoList = roleMapper.selectByUserId(userResult.getId(), null);
+            if(CollectionUtils.isEmpty(roleMenuVoList)){
+                BizBusinessUtils.bizBusinessException(userResult.getUserName() + "用户未分配数据权限,需配置数据权限方可访问");
+            }
+            roleMenuVoList.forEach(r -> deptList.addAll(r.getRoleDeptList()));
+            if(CollectionUtils.isEmpty(deptList)){
+                BizBusinessUtils.bizBusinessException(userResult.getUserName() + "用户未分配数据权限,需配置数据权限方可访问");
+            }
+        }
+
+        // 去重
+        Set<RoleDept> set = new TreeSet<>(Comparator.comparing(RoleDept::getDepCode));
+        set.addAll(deptList);
+        List<RoleDept> depCodeList = new ArrayList<>(set);
+
+        // 检查是否有全部数据权限
+        List<RoleDept> all = depCodeList.stream().filter(d -> DataPermissonTypeEnum.ALL_DATA.getCode()
+                .equals(d.getDataType())).collect(Collectors.toList());
+        if (!CollectionUtils.isEmpty(all)){
+            return query;
+        }
+
+        // 本部门数据权限
+        List<RoleDept> current = depCodeList.stream().filter(d -> DataPermissonTypeEnum.CURRENT_DEP_DATA.getCode()
+                .equals(d.getDataType())).collect(Collectors.toList());
+        // 检查数据权限类型
+        if(!CollectionUtils.isEmpty(all)){
+            // 全部数据权限返回null 表示所有数据都能看
+            query.setCompanyCodeList(null);
+        }else if(!CollectionUtils.isEmpty(current)){
+            // 查找用户所在企业下的所有部门(包括子公司)
+            List<Department> departmentList = departmentMapper.selectByCode(Collections.singletonList(userResult.getDepCode()), null);
+            List<Department> list = new ArrayList<>();
+
+            getDepChild(departmentList, list);
+            list.addAll(departmentList);
+            List<String> depList = list.stream().map(Department::getCode).collect(Collectors.toList());
+            query.setDepCodeList(depList);
+        }else {
+            // 根据自定义数据权限查询部门
+            List<String> list = deptList.stream().map(RoleDept::getDepCode).collect(Collectors.toList());
+            query.setDepCodeList(list);
+        }
+
+        return query;
+    }
+
+
+    /**
+     * 递归获取所有子集部门
+     * @param departList
+     * @param departmentList
+     * @return
+     */
+    private List<Department> getDepChild(List<Department> departList, List<Department> departmentList){
+        // 子集对象集合
+        List<Department> list = new ArrayList<>();
+        for (Department department : departList) {
+            List<Department> depart = departmentMapper.selectByParentCode(Collections.singletonList(department.getCode()), null);
+            if (!CollectionUtils.isEmpty(depart)) {
+                departmentList.addAll(depart);
+                list.addAll(depart);
+            }
+        }
+
+        if(!CollectionUtils.isEmpty(list)){
+            return getDepChild(list, departmentList);
+        }
+        return departmentList;
+    }
+
+}

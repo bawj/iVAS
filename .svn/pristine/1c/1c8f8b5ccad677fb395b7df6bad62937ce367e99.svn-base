@@ -1,0 +1,119 @@
+package com.yn.electricity.service.pas.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.yn.electricity.ResultVO;
+import com.yn.electricity.dao.DeviceDAO;
+import com.yn.electricity.dao.DeviceTypeDAO;
+import com.yn.electricity.mapper.DeviceMapper;
+import com.yn.electricity.mapper.DeviceTypeMapper;
+import com.yn.electricity.pas.*;
+import com.yn.electricity.service.pas.PasDeviceService;
+import com.yn.electricity.service.pas.PasDeviceServiceFeignClient;
+import com.yn.electricity.utils.BizBusinessUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * @author admin
+ * Date 2021/3/26 15:38
+ * Description
+ **/
+@Slf4j
+@Service
+public class PasDeviceServiceImpl implements PasDeviceService {
+
+    @Resource
+    private DeviceMapper deviceMapper;
+    @Resource
+    private DeviceTypeMapper deviceTypeMapper;
+    @Resource
+    private PasDeviceServiceFeignClient  deviceServiceFeignClient;
+
+    @Override
+    public Integer sendDelDeviceService(List<Integer> ids) {
+        PasBaseRequest<List<DeleteDeviceRequest>> pasBaseRequest = new PasBaseRequest<>();
+        pasBaseRequest.setId(5);
+        pasBaseRequest.setMethod("delDevice");
+
+        QueryWrapper<DeviceDAO> daoQueryWrapper = new QueryWrapper<>();
+        daoQueryWrapper.in("id" , ids);
+
+        List<DeviceDAO> deviceDAOList = deviceMapper.selectList(daoQueryWrapper);
+        Map<Integer, List<DeviceDAO>> collect = deviceDAOList.stream().collect(Collectors.groupingBy(DeviceDAO::getServiceId));
+
+        List<DeleteDeviceRequest> requestList = new ArrayList<>();
+
+        collect.forEach((serviceId, deviceList) -> {
+            DeleteDeviceRequest deviceRequest = new DeleteDeviceRequest();
+            deviceRequest.setServiceId(String.valueOf(serviceId));
+
+            List<DeleteDevice> devices = new ArrayList<>();
+            for (DeviceDAO deviceDAO : deviceList) {
+                DeleteDevice deleteDevice = new DeleteDevice();
+                deleteDevice.setDevId(String.valueOf(deviceDAO.getId()));
+                devices.add(deleteDevice);
+            }
+            deviceRequest.setInfo(devices);
+            requestList.add(deviceRequest);
+        });
+
+        pasBaseRequest.setParams(requestList);
+        log.info("#DeviceServiceImpl.deleteDevice# openFeign 删除设备 {} " , System.currentTimeMillis());
+        ResultVO<String> result = deviceServiceFeignClient.delDevice(pasBaseRequest);
+        if (result.getCode() != 0){
+            BizBusinessUtils.bizBusinessException(result.getMsg());
+        }
+        return null;
+    }
+
+    @Override
+    public Integer sendAddDevicePas(List<DeviceDAO> deviceList) {
+
+        PasBaseRequest<List<AddDeviceRequest>> pasBaseRequest = new PasBaseRequest<>();
+        pasBaseRequest.setId(4);
+        pasBaseRequest.setMethod("addDevice");
+
+        List<AddDeviceRequest> requestList = new ArrayList<>();
+
+        Map<Integer, List<DeviceDAO>> collect = deviceList.stream().collect(Collectors.groupingBy(DeviceDAO::getServiceId));
+        collect.forEach((serviceId, deviceDAOList) -> {
+            AddDeviceRequest deviceRequest = new AddDeviceRequest();
+            deviceRequest.setServiceId(String.valueOf(serviceId));
+
+            List<DeviceRequest> deviceRequests = new ArrayList<>();
+            deviceDAOList.forEach(deviceDAO -> {
+                DeviceRequest device = new DeviceRequest();
+                device.setDevId(String.valueOf(deviceDAO.getId()));
+                device.setDeviceGBId(deviceDAO.getCode());
+                device.setDevName(deviceDAO.getName());
+
+                DeviceTypeDAO deviceTypeDAO = deviceTypeMapper.selectById(deviceDAO.getDeviceTypeId());
+                device.setDevType(deviceTypeDAO.getType());
+                device.setUsername(deviceDAO.getRegisterAccount());
+                device.setPassword(deviceDAO.getRegisterPassword());
+                device.setIp(deviceDAO.getIp());
+                device.setPort(deviceDAO.getPort());
+                deviceRequests.add(device);
+            });
+            deviceRequest.setInfo(deviceRequests);
+
+            requestList.add(deviceRequest);
+        });
+        pasBaseRequest.setParams(requestList);
+        log.info("#PasDeviceServiceImpl.sendAddDevicePas# 添加设备 时间 {} " , System.currentTimeMillis());
+        ResultVO<String> result = deviceServiceFeignClient.saveEquipment(pasBaseRequest);
+        log.info("#PasDeviceServiceImpl.sendAddDevicePas# 添加设备完成 时间 {} " , System.currentTimeMillis());
+        if (result.getCode() != 0){
+            BizBusinessUtils.bizBusinessException(result.getMsg() , result.getData());
+        }
+        return null;
+    }
+
+
+}
