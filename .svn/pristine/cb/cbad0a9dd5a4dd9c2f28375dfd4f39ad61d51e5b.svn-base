@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.PlatformVideoInMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.PlatformVideoInDAO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="channel_no" property="channelNo" jdbcType="INTEGER"/>
+        <result column="t_camera_group_no" property="tCameraGroupNo" jdbcType="BIGINT"/>
+        <result column="create_date" property="createDate" jdbcType="TIMESTAMP"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="service_id" property="serviceId" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="platform_id" property="platformId" jdbcType="VARCHAR"/>
+        <result column="longitude" property="longitude" jdbcType="VARCHAR"/>
+        <result column="latitude" property="latitude" jdbcType="VARCHAR"/>
+        <result column="flag" property="flag" jdbcType="INTEGER"/>
+        <result column="device_gb_id" property="deviceGbId" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <update id="updatePlatformVideoInById">
+        UPDATE
+        `platform_video_in`
+        SET status= #{isOnline}
+        WHERE platform_id IN(
+        <foreach collection="list" index="ind" item="it" separator=",">
+            #{it}
+        </foreach>
+        )
+    </update>
+
+    <select id="selectByParentId" resultType="com.yn.electricity.vo.PlatformCameraGroupVO">
+        select id, group_name as name, no
+        from platform_camera_group
+        <where>
+            <if test="parentId != null">
+                parent_id = #{parentId}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByCameraGroupNo" resultType="com.yn.electricity.vo.PlatformVideoInVO">
+        SELECT pvi.id,
+               pvi.platform_id as platformId,
+               pvi.`name`,
+               pvi.channel_no  as channelNo,
+               pvi.latitude,
+               pvi.longitude,
+               pvi.`status`    as isOnline,
+               s.`ip`,
+               s.`port`
+        FROM platform_video_in pvi
+                 LEFT JOIN platform p ON pvi.platform_id = p.id
+                 LEFT JOIN service s ON p.service_id = s.service_id
+        where pvi.t_camera_group_no = #{no}
+    </select>
+
+</mapper>

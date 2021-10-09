@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.VideoPlanMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.VideoPlanDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="type" property="type" jdbcType="INTEGER"/>
+        <result column="camera_id" property="cameraId" jdbcType="INTEGER"/>
+        <result column="sub_type" property="subType" jdbcType="INTEGER"/>
+        <result column="begin_time" property="beginTime" jdbcType="VARCHAR"/>
+        <result column="end_time" property="endTime" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <select id="selectByCameraId" resultMap="BaseResultMap">
+        select id, type, camera_id, sub_type, begin_time, end_time, create_time
+        from video_plan
+        where camera_id = #{cameraId};
+    </select>
+
+
+</mapper>

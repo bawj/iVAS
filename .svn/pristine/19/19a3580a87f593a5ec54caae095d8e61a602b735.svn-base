@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.PlatformCameraGroupMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.PlatformCameraGroupDAO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="group_name" property="groupName" jdbcType="VARCHAR"/>
+        <result column="no" property="no" jdbcType="BIGINT"/>
+        <result column="parent_id" property="parentId" jdbcType="BIGINT"/>
+        <result column="camera_no" property="cameraNo" jdbcType="VARCHAR"/>
+        <result column="parent_camera_no" property="parentCameraNo" jdbcType="VARCHAR"/>
+        <result column="platform_id" property="platformId" jdbcType="BIGINT"/>
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <insert id="insertList" parameterType="java.util.List">
+        INSERT INTO platform_camera_group
+        (
+        group_name,
+        no,
+        parent_id,
+        camera_no,
+        parent_camera_no,
+        platform_id
+        ) VALUES
+        <foreach collection="platformList" item="it" separator=",">
+            (#{it.groupName},
+            #{it.no},
+            #{it.parentId},
+            #{it.cameraNo},
+            #{it.parentCameraNo},
+            #{it.platformId})
+        </foreach>
+    </insert>
+
+</mapper>

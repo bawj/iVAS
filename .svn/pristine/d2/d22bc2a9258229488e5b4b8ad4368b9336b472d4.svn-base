@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yn.electricity.mapper.PlatformMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.PlatformDAO">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="device_type_id" jdbcType="INTEGER" property="deviceTypeId"/>
+        <result column="service_id" jdbcType="INTEGER" property="serviceId"/>
+        <result column="organization_id" jdbcType="INTEGER" property="organizationId"/>
+        <result column="camera_group_id" jdbcType="INTEGER" property="cameraGroupId"/>
+        <result column="ip" jdbcType="VARCHAR" property="ip"/>
+        <result column="port" jdbcType="INTEGER" property="port"/>
+        <result column="register_account" jdbcType="VARCHAR" property="registerAccount"/>
+        <result column="register_password" jdbcType="VARCHAR" property="registerPassword"/>
+        <result column="online" jdbcType="SMALLINT" property="online"/>
+        <result column="code" jdbcType="VARCHAR" property="code"/>
+        <result column="company_code" jdbcType="VARCHAR" property="companyCode"/>
+        <result column="department_code" jdbcType="VARCHAR" property="departmentCode"/>
+        <result column="user_ip_id" jdbcType="VARCHAR" property="userIpId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="update_user_id" jdbcType="INTEGER" property="updateUserId"/>
+    </resultMap>
+
+    <select id="selectByNameNotId" resultType="com.yn.electricity.dao.PlatformDAO">
+        select *
+        from platform
+        where name = #{name}
+          and id != #{id}
+    </select>
+    <select id="selectByCodeNotId" resultType="com.yn.electricity.dao.DeviceDAO">
+        select *
+        from platform
+        where code = #{code}
+          and id != #{id}
+    </select>
+
+    <select id="selectPlatform" resultType="com.yn.electricity.vo.PlatformVO">
+        SELECT
+        d.id,
+        s.id as serviceId,
+        d.`name` as `name`,
+        dt.id as deviceTypeId,
+        dt.`name` as deviceTypeName,
+        d.ip,
+        d.`port`,
+        d.register_account as registerAccount,
+        d.register_password as registerPassword,
+        s.`name` as serviceName,
+        d.`code`,
+        d.longitude,
+        d.latitude,
+        d.create_time as createTime
+        FROM
+        device d
+        LEFT JOIN device_type dt ON d.device_type_id = dt.id
+        LEFT JOIN service s ON d.service_id = s.id
+        <where>
+            <if test="deviceQuery.name != null and deviceQuery.name != ''">
+                AND d.`name` LIKE CONCAT('%',#{deviceQuery.name},'%')
+            </if>
+            <if test="deviceQuery.deviceTypeId != null">
+                AND dt.id = #{deviceQuery.deviceTypeId}
+            </if>
+            <if test="deviceQuery.startTime != null and deviceQuery.startTime != '' and deviceQuery.endTime != null and deviceQuery.endTime != ''">
+                AND d.create_time BETWEEN #{deviceQuery.startTime} AND #{deviceQuery.endTime}
+            </if>
+        </where>
+        order by d.create_time desc
+    </select>
+
+</mapper>

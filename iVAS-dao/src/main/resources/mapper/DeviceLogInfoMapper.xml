@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yn.electricity.mapper.DeviceLogInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.yn.electricity.dao.DeviceLogInfoDAO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="device_id" property="deviceId" jdbcType="INTEGER"/>
+        <result column="online" property="online" jdbcType="SMALLINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <select id="selectByDevId" resultType="com.yn.electricity.vo.DeviceLogInfoVO">
+        SELECT
+            p.`name`,
+            p.ip,
+            p.`port`,
+            p.`online`,
+            dli.create_time as createTime
+        FROM
+            device_log_info dli
+                LEFT JOIN platform p ON dli.id = p.id
+        WHERE
+            dli.device_id = #{devId}
+    </select>
+
+
+</mapper>
