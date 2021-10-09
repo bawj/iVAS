@@ -15,4 +15,7 @@ public interface DeviceTypeService {
      */
     List<DeviceTypeVO> findDeviceType();
 
+    List<DeviceTypeVO> findPlatformType();
+
+
 }

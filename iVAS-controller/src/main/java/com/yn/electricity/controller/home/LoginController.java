@@ -27,6 +27,7 @@ import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,6 +43,7 @@ import java.util.Map;
  * @Date: 2021/1/21 11:56
  * @Description:
  */
+@CrossOrigin
 @Api(tags = "登陆管理")
 @RestController
 @RequestMapping(value = "user_login")

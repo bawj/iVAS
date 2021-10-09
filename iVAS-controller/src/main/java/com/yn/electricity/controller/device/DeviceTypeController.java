@@ -29,4 +29,10 @@ public class DeviceTypeController {
     }
 
 
+    @GetMapping("/platform_type/find")
+    @ApiOperation(value = "平台类型查询" , notes = "平台类型查询")
+    public void findPlatformType(HttpServletResponse httpServletResponse){
+        WebResult.success(deviceTypeService.findPlatformType(), httpServletResponse);
+    }
+
 }

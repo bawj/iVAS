@@ -1,6 +1,7 @@
 package com.yn.electricity.service;
 
 import com.yn.electricity.qto.DeviceDTO;
+import com.yn.electricity.vo.PlatformMapVO;
 
 import java.util.List;
 
@@ -26,4 +27,11 @@ public interface MapService {
      */
     String mapCameraLonLat(Integer cameraId, Double lng, Double lat);
 
+    /**
+     * 查询平台地图信息
+     * @return List
+     */
+    List<PlatformMapVO> mapFindPlatform();
+
+    String mapCameraPlatformLonLat(Integer cameraId, Double lng, Double lat);
 }

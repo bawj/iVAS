@@ -5,6 +5,7 @@ import com.yn.electricity.dao.DeviceDAO;
 import com.yn.electricity.dao.PlatformDAO;
 import com.yn.electricity.qto.BaseQuery;
 import com.yn.electricity.qto.PlatformQueryDTO;
+import com.yn.electricity.vo.PlatformMapVO;
 import com.yn.electricity.vo.PlatformVO;
 
 import java.util.List;
@@ -37,5 +38,11 @@ public interface PlatformMapper extends BaseMapper<PlatformDAO> {
      * @return List
      */
     List<PlatformVO> selectPlatform(PlatformQueryDTO deviceQuery, BaseQuery dataPermission);
+
+    /**
+     * 查询平台经纬度信息
+     * @return List
+     */
+    List<PlatformMapVO> mapFindPlatform();
 
 }

@@ -60,6 +60,16 @@ public class PlatformDAO extends BaseDAO{
     private Integer port;
 
     /**
+     * 经度
+     */
+    private String longitude;
+
+    /**
+     * 纬度
+     */
+    private String latitude;
+
+    /**
      * 注册账号
      */
    @TableField(value = "register_account")

@@ -89,6 +89,17 @@ public class PasPlatformServiceImpl implements PasPlatformService {
 
     @Override
     public void sendDelPlatformService(List<Integer> ids) {
+        //删除 platform_camera_group
+        QueryWrapper<PlatformCameraGroupDAO> queryWrapper = new QueryWrapper<>();
+        queryWrapper.in("platform_id" , ids);
+        platformCameraGroupMapper.delete(queryWrapper);
+
+        //删除 platform_video_in信息
+        QueryWrapper<PlatformVideoInDAO> videoInQueryWrapper = new QueryWrapper<>();
+        videoInQueryWrapper.in("platform_id" , ids);
+        platformVideoInMapper.delete(videoInQueryWrapper);
+
+
         List<PasPlatformDelete> pasPlatformDeleteList = new ArrayList<>();
 
         List<PlatformDAO> platformDAOList = platformMapper.selectBatchIds(ids);
@@ -115,16 +126,6 @@ public class PasPlatformServiceImpl implements PasPlatformService {
         if (resultVO == null || !resultVO.getCode().equals(ResultEnum.SUCCESS.getCode())){
             BizBusinessUtils.bizBusinessException("pas删除失败");
         }
-
-        //删除 platform_camera_group
-        QueryWrapper<PlatformCameraGroupDAO> queryWrapper = new QueryWrapper<>();
-        queryWrapper.in("platform_id" , ids);
-        platformCameraGroupMapper.delete(queryWrapper);
-
-        //删除 platform_video_in信息
-        QueryWrapper<PlatformVideoInDAO> videoInQueryWrapper = new QueryWrapper<>();
-        videoInQueryWrapper.in("platform_id" , ids);
-        platformVideoInMapper.delete(videoInQueryWrapper);
     }
 
 }

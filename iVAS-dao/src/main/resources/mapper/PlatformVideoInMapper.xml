@@ -20,7 +20,7 @@
     <update id="updatePlatformVideoInById">
         UPDATE
         `platform_video_in`
-        SET status= #{isOnline} , update_time = now()
+        SET status= #{isOnline}
         WHERE platform_id IN(
         <foreach collection="list" index="ind" item="it" separator=",">
             #{it}
@@ -28,4 +28,46 @@
         )
     </update>
 
+    <select id="selectByParentId" resultType="com.yn.electricity.vo.PlatformGroupVO">
+        select id, group_name as name, no
+        from platform_camera_group
+        <where>
+            <if test="parentId != null">
+                parent_id = #{parentId}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByCameraGroupNo" resultType="com.yn.electricity.vo.PlatformVideoInVO">
+        SELECT pvi.id,
+               pvi.platform_id  as platformId,
+               pvi.`name`,
+               pvi.channel_no   as channelNo,
+               pvi.latitude,
+               pvi.longitude,
+               pvi.`status`     as isOnline,
+               pvi.device_gb_id as code,
+               s.`ip`           as serviceIp,
+               s.`port`         as servicePort
+        FROM platform_video_in pvi
+                 LEFT JOIN platform p ON pvi.platform_id = p.id
+                 LEFT JOIN service s ON p.service_id = s.id
+        where pvi.t_camera_group_no = #{no}
+    </select>
+
+
+    <select id="selectCameraByPlatformId" resultType="com.yn.electricity.vo.PlatformVideoInVO">
+        select id,
+               platform_id  as platformId,
+               #{pIp}       as ip,
+               #{pPort}     as port,
+               `name`,
+               channel_no   as channelNo,
+               latitude,
+               longitude,
+               device_gb_id as code,
+               `status`     as isOnline
+        from platform_video_in
+        where platform_id = #{platformId}
+    </select>
 </mapper>

@@ -12,5 +12,17 @@
     </resultMap>
 
 
+    <select id="selectByDeviceType" resultType="com.yn.electricity.dao.DeviceTypeDAO">
+        select *
+        from device_type
+        where type not like CONCAT('%', 'Platform', '%')
+    </select>
+
+
+    <select id="selectByPlatformType" resultType="com.yn.electricity.dao.DeviceTypeDAO">
+        select *
+        from device_type
+        where type like CONCAT('%', 'Platform', '%')
+    </select>
 
 </mapper>

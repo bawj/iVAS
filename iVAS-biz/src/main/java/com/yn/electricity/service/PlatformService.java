@@ -4,6 +4,7 @@ import com.github.pagehelper.PageInfo;
 import com.yn.electricity.qto.PlatformQueryDTO;
 import com.yn.electricity.request.PlatformAlterRequest;
 import com.yn.electricity.request.PlatformSaveRequest;
+import com.yn.electricity.vo.PlatformCameraGroupVO;
 import com.yn.electricity.vo.PlatformVO;
 
 import java.util.List;
@@ -38,4 +39,10 @@ public interface PlatformService {
      */
     PageInfo<PlatformVO> findPlatform(PlatformQueryDTO deviceQuery);
 
+    /**
+     * 查询平台的镜头组和镜头
+     * @param platformId platformId
+     * @return PlatformCameraGroupVO
+     */
+    PlatformCameraGroupVO findPlatformCameraGroup(String platformId);
 }

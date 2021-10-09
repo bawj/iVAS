@@ -38,36 +38,67 @@
 
     <select id="selectPlatform" resultType="com.yn.electricity.vo.PlatformVO">
         SELECT
-        d.id,
+        p.id,
         s.id as serviceId,
-        d.`name` as `name`,
+        p.`name` as `name`,
         dt.id as deviceTypeId,
         dt.`name` as deviceTypeName,
-        d.ip,
-        d.`port`,
-        d.register_account as registerAccount,
-        d.register_password as registerPassword,
+        p.ip,
+        p.`port`,
+        p.register_account as registerAccount,
+        p.register_password as registerPassword,
         s.`name` as serviceName,
-        d.`code`,
-        d.longitude,
-        d.latitude,
-        d.create_time as createTime
+        p.`code`,
+        p.longitude,
+        p.latitude,
+        p.create_time as createTime
         FROM
-        device d
-        LEFT JOIN device_type dt ON d.device_type_id = dt.id
-        LEFT JOIN service s ON d.service_id = s.id
+        platform p
+        LEFT JOIN device_type dt ON p.device_type_id = dt.id
+        LEFT JOIN service s ON p.service_id = s.id
         <where>
             <if test="deviceQuery.name != null and deviceQuery.name != ''">
-                AND d.`name` LIKE CONCAT('%',#{deviceQuery.name},'%')
+                AND p.`name` LIKE CONCAT('%',#{deviceQuery.name},'%')
             </if>
             <if test="deviceQuery.deviceTypeId != null">
                 AND dt.id = #{deviceQuery.deviceTypeId}
             </if>
             <if test="deviceQuery.startTime != null and deviceQuery.startTime != '' and deviceQuery.endTime != null and deviceQuery.endTime != ''">
-                AND d.create_time BETWEEN #{deviceQuery.startTime} AND #{deviceQuery.endTime}
+                AND p.create_time BETWEEN #{deviceQuery.startTime} AND #{deviceQuery.endTime}
             </if>
         </where>
-        order by d.create_time desc
+        order by p.create_time desc
+    </select>
+
+
+    <resultMap id="selectMapFindPlatform" type="com.yn.electricity.vo.PlatformMapVO">
+        <result column="id" property="id" javaType="java.lang.Integer"/>
+        <result column="name" property="name" javaType="java.lang.String"/>
+        <result column="longitude" property="longitude" javaType="java.lang.Double"/>
+        <result column="code" property="code" javaType="java.lang.String"/>
+        <result column="latitude" property="latitude" javaType="java.lang.Double"/>
+        <result column="isOnline" property="isOnline" javaType="java.lang.Integer"/>
+        <result column="ip" property="ip" javaType="java.lang.String"/>
+        <result column="port" property="port" javaType="java.lang.Integer"/>
+        <collection property="cameraList" column="{platformId = id , pIp = ip, pPort = port}"
+                    select="com.yn.electricity.mapper.PlatformVideoInMapper.selectCameraByPlatformId">
+        </collection>
+    </resultMap>
+
+    <select id="mapFindPlatform" resultMap="selectMapFindPlatform">
+        SELECT
+            p.id,
+            p.`name`,
+            p.longitude,
+            p.latitude,
+            p.`online` as isOnline,
+            p.code,
+            p.ip,
+            p.`port`
+        FROM
+            platform p
+        ORDER BY
+            p.create_time DESC
     </select>
 
 </mapper>

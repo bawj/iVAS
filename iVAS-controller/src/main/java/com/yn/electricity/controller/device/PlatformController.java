@@ -105,4 +105,14 @@ public class PlatformController {
     public void findPlatform(PlatformQueryDTO platformQuery, HttpServletResponse httpServletResponse) {
         WebResult.success(platformService.findPlatform(platformQuery), httpServletResponse);
     }
+
+
+    @GetMapping("/platform/find_camera_group")
+    @ApiOperation(value = "查询设备信息", notes = "查询设备信息")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "platformId", value = "platformId", dataTypeClass = Integer.class),
+    })
+    public void findPlatformCameraGroup(String platformId, HttpServletResponse httpServletResponse) {
+        WebResult.success(platformService.findPlatformCameraGroup(platformId), httpServletResponse);
+    }
 }

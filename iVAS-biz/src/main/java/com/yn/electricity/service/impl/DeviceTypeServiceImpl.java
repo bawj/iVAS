@@ -26,7 +26,21 @@ public class DeviceTypeServiceImpl implements DeviceTypeService {
     public List<DeviceTypeVO> findDeviceType() {
         List<DeviceTypeVO> deviceTypes = new ArrayList<>();
 
-        List<DeviceTypeDAO> deviceTypeList = deviceTypeMapper.selectList(null);
+        List<DeviceTypeDAO> deviceTypeList = deviceTypeMapper.selectByDeviceType();
+        deviceTypeList.forEach(deviceTypeDAO -> {
+            DeviceTypeVO deviceType = new DeviceTypeVO();
+            BeanUtils.copyProperties(deviceTypeDAO , deviceType);
+            deviceTypes.add(deviceType);
+        });
+
+        return deviceTypes;
+    }
+
+    @Override
+    public List<DeviceTypeVO> findPlatformType() {
+        List<DeviceTypeVO> deviceTypes = new ArrayList<>();
+
+        List<DeviceTypeDAO> deviceTypeList = deviceTypeMapper.selectByPlatformType();
         deviceTypeList.forEach(deviceTypeDAO -> {
             DeviceTypeVO deviceType = new DeviceTypeVO();
             BeanUtils.copyProperties(deviceTypeDAO , deviceType);

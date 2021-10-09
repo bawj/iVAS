@@ -1,13 +1,14 @@
 package com.yn.electricity.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.collect.Maps;
-import com.yn.electricity.dao.DeviceDAO;
-import com.yn.electricity.dao.DeviceTypeDAO;
-import com.yn.electricity.dao.PlatformDAO;
+import com.yn.electricity.dao.*;
 import com.yn.electricity.mapper.DeviceTypeMapper;
+import com.yn.electricity.mapper.PlatformCameraGroupMapper;
 import com.yn.electricity.mapper.PlatformMapper;
+import com.yn.electricity.mapper.PlatformVideoInMapper;
 import com.yn.electricity.qto.BaseQuery;
 import com.yn.electricity.qto.PlatformQueryDTO;
 import com.yn.electricity.request.PlatformAlterRequest;
@@ -22,7 +23,7 @@ import com.yn.electricity.util.PWDUtil;
 import com.yn.electricity.util.RedisInfoUtil;
 import com.yn.electricity.utils.BizBusinessUtils;
 import com.yn.electricity.utils.ListUtil;
-import com.yn.electricity.vo.PlatformVO;
+import com.yn.electricity.vo.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -41,6 +42,10 @@ import java.util.List;
 @Service
 public class PlatformServiceImpl implements PlatformService {
 
+    @Resource
+    private PlatformCameraGroupMapper platformCameraGroupMapper;
+    @Resource
+    private PlatformVideoInMapper platformVideoInMapper;
     @Resource
     private DataPermissionUtil dataPermissionUtil;
     @Resource
@@ -91,6 +96,8 @@ public class PlatformServiceImpl implements PlatformService {
         platformDAO.setPort(platformSaveRequest.getPort());
         platformDAO.setRegisterAccount(platformSaveRequest.getRegisterAccount());
         platformDAO.setCode(platformSaveRequest.getCode());
+        platformDAO.setLongitude(platformSaveRequest.getLongitude());
+        platformDAO.setLatitude(platformSaveRequest.getLatitude());
         PWDUtil pwdUtil = new PWDUtil();
         platformDAO.setRegisterPassword(pwdUtil.encryptPassword(platformSaveRequest.getRegisterPassword()));
         platformDAO.setOnline((short) 0);
@@ -160,6 +167,19 @@ public class PlatformServiceImpl implements PlatformService {
         }
         //向cms发送删除设备的請求 pas必须先删除
         pasPlatformService.sendDelPlatformService(ids);
+        //删除镜头
+//        QueryWrapper<PlatformCameraGroupDAO> queryWrapper = new QueryWrapper<>();
+//        queryWrapper.in("platform_id", ids);
+//        List<PlatformCameraGroupDAO> platformCameraGroupDAOList = platformCameraGroupMapper.selectList(queryWrapper);
+//        if (!CollectionUtils.isEmpty(platformCameraGroupDAOList)){
+//            for (PlatformCameraGroupDAO platformCameraGroupDAO : platformCameraGroupDAOList) {
+//                QueryWrapper<PlatformVideoInDAO> cameraQueryWrapper = new QueryWrapper<>();
+//                queryWrapper.in("t_camera_group_no", platformCameraGroupDAO.getNo());
+//                platformVideoInMapper.delete(cameraQueryWrapper);
+//            }
+//        }
+        //删除镜头组
+        //platformCameraGroupMapper.delete(queryWrapper);
         //删除设备
         platformMapper.deleteBatchIds(ids);
         return null;
@@ -182,4 +202,19 @@ public class PlatformServiceImpl implements PlatformService {
         return new PageInfo<>(ListUtil.newArrayList(deviceList));
     }
 
+    @Override
+    public PlatformCameraGroupVO findPlatformCameraGroup(String platformId) {
+        PlatformCameraGroupVO platformCameraGroup = new PlatformCameraGroupVO();
+        if (platformId == null) {
+            platformId = "0";
+        }
+        List<PlatformGroupVO> platformGroupList = platformVideoInMapper.selectByParentId(platformId);
+        platformCameraGroup.setPlatformGroupList(platformGroupList);
+
+        List<PlatformVideoInVO> platformCameraList = platformVideoInMapper.selectByCameraGroupNo(platformId);
+        platformCameraGroup.setPlatformCameraList(platformCameraList);
+        return platformCameraGroup;
+    }
+
 }
+

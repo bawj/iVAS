@@ -37,4 +37,19 @@ public class MapController {
         WebResult.success(mapService.mapCameraLonLat(cameraId , lng , lat), response);
     }
 
+
+    @ApiOperation(value = "查询平台" , notes = "查询平台")
+    @GetMapping("/map/find_platform")
+    public void mapFindPlatform(HttpServletResponse response){
+        WebResult.success(mapService.mapFindPlatform(), response);
+    }
+
+    @SystemBeforeLog(menuName = "电子地图", description = "修改平台镜头经纬度")
+    @ApiOperation(value = "修改平台镜头经纬度" , notes = "修改平台镜头经纬度")
+    @GetMapping("/map/camera_platform_lonLat")
+    public void mapCameraPlatformLonLat(Integer cameraId , Double lng , Double lat,
+                                HttpServletResponse response){
+        WebResult.success(mapService.mapCameraPlatformLonLat(cameraId , lng , lat), response);
+    }
+
 }
