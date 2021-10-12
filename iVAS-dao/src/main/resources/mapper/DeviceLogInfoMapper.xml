@@ -9,19 +9,27 @@
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
+    <delete id="deleteTime">
+        DELETE
+        FROM device_log_info
+        WHERE DATEDIFF(NOW(), create_time) > 30
+    </delete>
 
     <select id="selectByDevId" resultType="com.yn.electricity.vo.DeviceLogInfoVO">
-        SELECT
-            p.`name`,
-            p.ip,
-            p.`port`,
-            p.`online`,
-            dli.create_time as createTime
-        FROM
-            device_log_info dli
-                LEFT JOIN platform p ON dli.id = p.id
-        WHERE
+        SELECT d.`name`        as name,
+               d.ip            as ip,
+               d.`port`        as port,
+               d.`online`      as online,
+               dli.create_time as createTime
+        FROM device_log_info dli
+                 LEFT JOIN device d ON dli.device_id = d.id
+        <where>
             dli.device_id = #{devId}
+            <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+                AND dli.create_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+        order by dli.create_time desc
     </select>
 
 

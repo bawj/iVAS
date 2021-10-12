@@ -26,8 +26,8 @@ public class PlatformDeviceLogServiceImpl implements PlatformDeviceLogService {
     private DeviceLogInfoMapper deviceLogInfoMapper;
 
     @Override
-    public List<PlatformLogInfoVO> platformLogInfo(Integer platformId) {
-        List<PlatformLogInfoVO> platformLogInfoList = platformLogInfoMapper.selectByPlatformId(platformId);
+    public List<PlatformLogInfoVO> platformLogInfo(Integer platformId, String startTime, String endTime) {
+        List<PlatformLogInfoVO> platformLogInfoList = platformLogInfoMapper.selectByPlatformId(platformId,startTime,endTime);
         if (!CollectionUtils.isEmpty(platformLogInfoList)){
             return platformLogInfoList;
         }
@@ -35,11 +35,21 @@ public class PlatformDeviceLogServiceImpl implements PlatformDeviceLogService {
     }
 
     @Override
-    public List<DeviceLogInfoVO> deviceLogInfo(Integer devId) {
-        List<DeviceLogInfoVO> deviceLogInfoList = deviceLogInfoMapper.selectByDevId(devId);
+    public void deletePlatformLogInfo() {
+        platformLogInfoMapper.deleteTime();
+    }
+
+    @Override
+    public List<DeviceLogInfoVO> deviceLogInfo(Integer devId, String startTime, String endTime) {
+        List<DeviceLogInfoVO> deviceLogInfoList = deviceLogInfoMapper.selectByDevId(devId,startTime,endTime);
         if (!CollectionUtils.isEmpty(deviceLogInfoList)){
             return deviceLogInfoList;
         }
         return new ArrayList<>();
+    }
+
+    @Override
+    public void deleteDeviceLogInfo() {
+        deviceLogInfoMapper.deleteTime();
     }
 }

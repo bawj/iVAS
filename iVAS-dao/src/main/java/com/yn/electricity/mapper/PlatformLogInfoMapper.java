@@ -8,6 +8,18 @@ import java.util.List;
 
 public interface PlatformLogInfoMapper extends BaseMapper<PlatformLogInfoDAO> {
 
-    List<PlatformLogInfoVO> selectByPlatformId(Integer platformId);
+    /**
+     * 查询日志
+     * @param platformId id
+     * @param startTime  date
+     * @param endTime date
+     * @return List
+     */
+    List<PlatformLogInfoVO> selectByPlatformId(Integer platformId, String startTime, String endTime);
+
+    /**
+     * 删除
+     */
+    void deleteTime();
 
 }

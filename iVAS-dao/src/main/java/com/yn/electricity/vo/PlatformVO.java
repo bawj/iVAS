@@ -53,6 +53,8 @@ public class PlatformVO {
      */
     private String port;
 
+    private Integer online;
+
     /**
      * 注册账号
      */

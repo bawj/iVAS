@@ -8,6 +8,17 @@ import java.util.List;
 
 public interface DeviceLogInfoMapper extends BaseMapper<DeviceLogInfoDAO> {
 
-    List<DeviceLogInfoVO> selectByDevId(Integer devId);
+    /**
+     * 查询日志
+     * @param devId id
+     * @param startTime  date
+     * @param endTime date
+     * @return List
+     */
+    List<DeviceLogInfoVO> selectByDevId(Integer devId, String startTime, String endTime);
 
+    /**
+     * 删除
+     */
+    void deleteTime();
 }

@@ -8,6 +8,7 @@ import com.yn.electricity.mapper.LogInfoMapper;
 import com.yn.electricity.qto.LogInfoDTO;
 import com.yn.electricity.request.LogInfoSaveRequest;
 import com.yn.electricity.service.LogInfoService;
+import com.yn.electricity.service.PlatformDeviceLogService;
 import com.yn.electricity.util.ValidationUtils;
 import com.yn.electricity.utils.BizBusinessUtils;
 import com.yn.electricity.utils.cron.StringUtils;
@@ -31,6 +32,8 @@ import java.util.List;
 public class LogInfoServiceImpl implements LogInfoService {
     @Resource
     private LogInfoMapper logInfoMapper;
+    @Resource
+    private PlatformDeviceLogService platformDeviceLogService;
 
     @Override
     public String insert(LogInfoSaveRequest entity) {
@@ -64,6 +67,8 @@ public class LogInfoServiceImpl implements LogInfoService {
     @Override
     public void deleteTime() {
         logInfoMapper.deleteTime();
+        platformDeviceLogService.deletePlatformLogInfo();
+        platformDeviceLogService.deleteDeviceLogInfo();
         log.info("删除日志时间：" + new Date() + "");
     }
 }

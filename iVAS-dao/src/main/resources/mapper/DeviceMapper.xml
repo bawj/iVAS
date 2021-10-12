@@ -43,6 +43,7 @@
         dt.`name` as deviceTypeName,
         d.ip,
         d.`port`,
+        d.online,
         d.register_account as registerAccount,
         d.register_password as registerPassword,
         s.`name` as serviceName,

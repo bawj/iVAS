@@ -13,14 +13,28 @@ public interface PlatformDeviceLogService {
     /**
      * 查询平台设备日志
      * @param platformId id
+     * @param startTime  开始时间
+     * @param endTime   结束时间
      * @return list
      */
-    List<PlatformLogInfoVO> platformLogInfo(Integer platformId);
+    List<PlatformLogInfoVO> platformLogInfo(Integer platformId, String startTime, String endTime);
+
+    /**
+     * 删除大于30天的日志
+     */
+    void deletePlatformLogInfo();
 
     /**
      * 查询设备日志
      * @param devId id
+     * @param startTime  开始时间
+     * @param endTime   结束时间
      * @return list
      */
-    List<DeviceLogInfoVO> deviceLogInfo(Integer devId);
+    List<DeviceLogInfoVO> deviceLogInfo(Integer devId, String startTime, String endTime);
+
+    /**
+     * 删除大于30天的日志
+     */
+    void deleteDeviceLogInfo();
 }

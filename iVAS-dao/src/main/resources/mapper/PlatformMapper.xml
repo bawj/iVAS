@@ -45,6 +45,7 @@
         dt.`name` as deviceTypeName,
         p.ip,
         p.`port`,
+        p.online,
         p.register_account as registerAccount,
         p.register_password as registerPassword,
         s.`name` as serviceName,

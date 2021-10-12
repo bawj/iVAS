@@ -69,6 +69,10 @@ public class DeviceVO {
     @ExcelField(value = "端口")
     private String port;
 
+
+    @ExcelField(value = "在线状态（0下线,1上线）")
+    private Integer online;
+
     /**
      * 注册账号
      */
